@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF9F4">
+<title>SolarPayback v3.6 — คำนวณจุดคุ้มทุนโซล่าเซลล์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-base:#FBF9F4;--bg-subtle:#F3F0E9;--surface:#FFF;--border:#EDE8DD;
+    --text-primary:#0E1B2C;--text-secondary:#5A6472;--text-muted:#98A1AE;
+    --sun-50:#FFF9E6;--sun-500:#FFC93C;--sun-600:#FFB020;--sun-700:#FF9F1C;
+    --sun-grad:linear-gradient(135deg,#FFD95A 0%,#FF9F1C 100%);
+    --navy-900:#0B1B2B;--navy-700:#1B3A57;
+    --navy-grad:linear-gradient(160deg,#0B1B2B 0%,#1B3A57 100%);
+    --eco-50:#ECFDF5;--eco-500:#10B981;--eco-600:#059669;
+    --danger-50:#FEF2F2;--danger-500:#EF4444;--danger-600:#DC2626;
+    --info-50:#EFF6FF;--info-500:#3B82F6;--info-600:#2563EB;
+    --r-sm:10px;--r-md:16px;--r-lg:24px;--r-full:999px;
+    --shadow-card:0 1px 2px rgba(14,27,44,.04),0 8px 24px rgba(14,27,44,.06);
+    --shadow-hero:0 20px 60px -20px rgba(255,159,28,.35);
+    --shadow-nav:0 4px 16px rgba(14,27,44,.08);
+  }
+  html.dark{
+    --bg-base:#0F1419;--bg-subtle:#1A2028;--surface:#1E252F;--border:#2D3542;
+    --text-primary:#F5F2EA;--text-secondary:#A5ADBA;--text-muted:#6B7280;
+    --sun-50:#3D2E0F;--eco-50:#0F2F23;--danger-50:#3B1515;--info-50:#0F1B33;
+    --navy-grad:linear-gradient(160deg,#16273A 0%,#0B1B2B 100%);
+    --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);
+    --shadow-nav:0 4px 16px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg-base);color:var(--text-primary);
+    font-family:'Inter','IBM Plex Sans Thai',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+    transition:background-color .3s,color .3s}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit}
+  .app{max-width:480px;margin:0 auto;min-height:100vh;padding:0 24px;display:flex;flex-direction:column;position:relative}
+  .screen{animation:fadeIn .3s ease;padding-top:72px}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .top-nav{position:fixed;top:12px;left:50%;transform:translateX(-50%);
+    width:min(calc(100% - 32px),448px);display:flex;justify-content:space-between;align-items:center;z-index:50}
+  .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--surface);
+    border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+    color:var(--text-primary);box-shadow:var(--shadow-nav);transition:transform .15s,background-color .2s}
+  .icon-btn:active{transform:scale(.92)}
+  .icon-btn:hover{background:var(--bg-subtle)}
+  .icon-moon{display:block}.icon-sun{display:none}
+  html.dark .icon-sun{display:block}html.dark .icon-moon{display:none}
+  .welcome{padding-top:80px;padding-bottom:32px;display:flex;flex-direction:column;min-height:100vh}
+  .sun-hero{position:relative;width:96px;height:96px;margin:0 auto 40px}
+  .sun-glow{position:absolute;inset:-20px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,201,60,.45) 0%,transparent 70%);
+    animation:pulse 3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.15);opacity:.9}}
+  .sun-disc{position:relative;width:96px;height:96px;border-radius:50%;
+    background:var(--sun-grad);box-shadow:var(--shadow-hero);
+    display:flex;align-items:center;justify-content:center;font-size:42px}
+  .welcome h1{text-align:center;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+  .welcome h1 .accent{background:var(--sun-grad);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent}
+  .welcome .subtitle{text-align:center;margin-top:12px;color:var(--text-secondary);font-size:15px}
+  .teaser{margin-top:40px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-card)}
+  .teaser-row{display:flex;justify-content:space-between;align-items:center}
+  .teaser-label{font-size:12px;color:var(--text-muted);font-weight:500}
+  .teaser-value{font-size:14px;font-weight:600;margin-top:4px}
+  .teaser-value.eco{color:var(--eco-500);font-size:18px;font-variant-numeric:tabular-nums}
+  .teaser-profit{margin-top:12px;padding:8px 12px;background:var(--eco-50);
+    border-radius:var(--r-sm);display:flex;justify-content:space-between;font-size:13px;color:var(--eco-600)}
+  .teaser-profit strong{font-weight:600;font-variant-numeric:tabular-nums}
+  .welcome-spacer{flex:1;min-height:40px}
+  .link-btn{display:block;width:100%;padding:12px;margin-top:12px;text-align:center;
+    font-size:14px;color:var(--text-secondary)}
+  .link-btn:hover{color:var(--text-primary)}
+  .btn-primary{height:56px;width:100%;border-radius:var(--r-full);background:var(--sun-grad);
+    color:#0E1B2C;font-weight:600;font-size:16px;box-shadow:var(--shadow-hero);
+    transition:transform .12s,box-shadow .2s}
+  .btn-primary:active{transform:scale(.97);box-shadow:0 4px 12px -6px rgba(255,159,28,.5)}
+  .btn-secondary{height:48px;width:100%;border-radius:var(--r-full);background:var(--surface);
+    color:var(--text-primary);border:1px solid var(--border);font-weight:500;font-size:15px;transition:transform .12s}
+  .btn-secondary:active{transform:scale(.97)}
+  .disclaimer{margin-top:16px;text-align:center;font-size:12px;color:var(--text-muted);line-height:1.5}
+  .wizard{padding-top:72px;padding-bottom:32px;display:flex;flex-direction:column;min-height:100vh}
+  .wizard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .back-btn{font-size:14px;color:var(--text-secondary);padding:4px 0}
+  .step-count{font-size:12px;font-weight:500;color:var(--text-muted)}
+  .progress-bar{height:4px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:32px}
+  .progress-fill{height:100%;background:var(--sun-grad);border-radius:999px;transition:width .5s ease}
+  .wizard h2{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+  .wizard .helper{margin-top:8px;font-size:14px;color:var(--text-secondary)}
+  .wizard-spacer{flex:1;min-height:40px}
+  .field{margin-top:24px}
+  .field label{display:block;font-size:14px;font-weight:500;color:var(--text-secondary);margin-bottom:8px}
+  .field-input-wrap{display:flex;align-items:center;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--r-md);padding:0 16px;
+    transition:border-color .2s,box-shadow .2s}
+  .field-input-wrap:focus-within{border-color:var(--sun-700);box-shadow:0 0 0 3px rgba(255,159,28,.12)}
+  .field-input-wrap input{flex:1;height:56px;background:transparent;border:none;outline:none;
+    font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary)}
+  .field-input-wrap input::-webkit-outer-spin-button,
+  .field-input-wrap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .field-unit{font-size:13px;color:var(--text-muted);margin-left:8px}
+  .field-hint{margin-top:6px;font-size:12px;color:var(--text-muted);line-height:1.5}
+  .switch-row{display:flex;justify-content:space-between;align-items:center;padding:16px;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);margin-top:16px}
+  .switch-label{font-size:14px;font-weight:500}
+  .switch-hint{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .switch{width:48px;height:28px;background:var(--border);border-radius:999px;
+    position:relative;transition:background .2s;flex-shrink:0}
+  .switch.on{background:var(--sun-grad)}
+  .switch::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;
+    background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+  .switch.on::after{transform:translateX(20px)}
+  .segmented{display:flex;background:var(--bg-subtle);border-radius:var(--r-full);
+    padding:4px;gap:4px;margin-top:8px}
+  .segmented button{flex:1;padding:10px 12px;border-radius:var(--r-full);font-size:13px;
+    font-weight:500;color:var(--text-secondary);transition:all .2s}
+  .segmented button.active{background:var(--sun-grad);color:#0E1B2C;box-shadow:0 2px 8px rgba(255,159,28,.3)}
+  .info-box{margin-top:16px;padding:12px 16px;background:var(--info-50);border-radius:var(--r-md);
+    font-size:13px;color:var(--info-600);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .info-box strong{font-variant-numeric:tabular-nums;font-weight:600}
+  .info-box.eco{background:var(--eco-50);color:var(--eco-600)}
+  .info-box.danger{background:var(--danger-50);color:var(--danger-600)}
+  .info-box.sun{background:var(--sun-50);color:var(--sun-700)}
+  .info-box .info-label{flex:1}
+  .info-box .info-value{font-variant-numeric:tabular-nums;font-weight:600}
+  .warn-box{margin-top:12px;padding:12px 16px;background:var(--sun-50);border-radius:var(--r-md);
+    font-size:12px;color:var(--sun-700);line-height:1.5}
+  .explain-box{margin-top:12px;padding:14px 16px;background:var(--info-50);
+    border-radius:var(--r-md);font-size:12px;color:var(--info-600);line-height:1.6}
+  .explain-box .title{font-weight:600;font-size:13px;margin-bottom:6px}
+  .explain-box code{background:rgba(59,130,246,.15);padding:1px 6px;
+    border-radius:4px;font-family:'SF Mono',monospace;font-size:11px}
+  .preset-years{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .preset-year-btn{padding:8px 14px;border-radius:var(--r-full);border:1px solid var(--border);
+    background:var(--surface);font-size:12px;font-weight:600;color:var(--text-secondary);
+    transition:all .15s;font-variant-numeric:tabular-nums}
+  .preset-year-btn:hover{border-color:var(--sun-700);color:var(--sun-700)}
+  .preset-year-btn.active{border-color:var(--sun-700);background:var(--sun-50);color:var(--sun-700)}
+  .big-number{text-align:center;margin-top:40px;font-size:64px;font-weight:700;
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+  .big-number .num{background:var(--sun-grad);-webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent}
+  .big-number .unit{font-size:28px;color:var(--text-muted);margin-left:4px}
+  .slider-wrap{margin-top:32px}
+  .slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;
+    outline:none;cursor:pointer;
+    background:linear-gradient(90deg,#FFD95A 0%,#FF9F1C var(--val,60%),var(--border) var(--val,60%),var(--border) 100%)}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;
+    background:#FFF;border:3px solid var(--sun-700);box-shadow:0 4px 12px rgba(255,159,28,.35);cursor:grab}
+  .slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#FFF;
+    border:3px solid var(--sun-700);box-shadow:0 4px 12px rgba(255,159,28,.35);cursor:grab}
+  .slider-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)}
+  .preset-chips{display:flex;gap:8px;margin-top:24px}
+  .chip{flex:1;padding:10px 8px;border-radius:var(--r-full);border:1px solid var(--border);
+    background:var(--surface);font-size:12px;font-weight:500;color:var(--text-secondary);transition:all .15s}
+  .chip.active{border-color:var(--sun-700);background:var(--sun-50);color:var(--sun-700)}
+  .results-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:8px}
+  .results-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .edit-btn{padding:6px 12px;border-radius:var(--r-full);border:1px solid var(--border);
+    background:var(--surface);font-size:12px;font-weight:500;color:var(--text-secondary)}
+  .hero-card{position:relative;overflow:hidden;background:var(--navy-grad);
+    border-radius:var(--r-lg);padding:24px;color:#fff;box-shadow:0 20px 60px -20px rgba(11,27,43,.4)}
+  .hero-card::after{content:"";position:absolute;top:-40px;right:-40px;width:160px;height:160px;
+    background:radial-gradient(circle,rgba(255,201,60,.35),transparent 70%);border-radius:50%;pointer-events:none}
+  .hero-card .label{font-size:13px;color:rgba(255,255,255,.6);position:relative}
+  .hero-big{margin-top:8px;font-size:clamp(28px,9vw,44px);font-weight:700;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;background:var(--sun-grad);-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent;color:transparent;position:relative;
+    animation:numPop .5s cubic-bezier(.22,1,.36,1)}
+  @keyframes numPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .hero-sub{margin-top:4px;font-size:13px;color:rgba(255,255,255,.6);position:relative}
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;position:relative}
+  .hero-stat{background:rgba(255,255,255,.08);border-radius:var(--r-md);padding:12px}
+  .hero-stat .stat-label{font-size:11px;color:rgba(255,255,255,.6)}
+  .hero-stat .stat-value{margin-top:4px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .hero-stat .stat-value.eco{color:#34D399}
+  .hero-stat .stat-value.danger{color:#F87171}
+  .hero-stat .stat-value.sun{color:#FFC93C}
+  .section{margin-top:20px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-card)}
+  .section h3{font-size:14px;font-weight:600;margin-bottom:14px}
+  .breakdown-row{display:flex;justify-content:space-between;font-size:13px;
+    padding:8px 0;border-bottom:1px solid var(--border)}
+  .breakdown-row:last-child{border-bottom:none}
+  .breakdown-row .lbl{color:var(--text-secondary)}
+  .breakdown-row .val{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .breakdown-row .val.eco{color:var(--eco-600)}
+  .breakdown-row .val.danger{color:var(--danger-500)}
+  .breakdown-row.total{padding-top:12px;margin-top:8px;border-top:2px solid var(--border);
+    font-size:15px;font-weight:700}
+  .breakdown-row.sub{font-size:12px;padding:4px 0;padding-left:16px;border-bottom:none;opacity:.85}
+  .warranty-section{background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(59,130,246,.02));
+    border-color:var(--info-500)}
+  .warranty-section h3{color:var(--info-600)}
+  .warranty-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+    border-radius:var(--r-full);background:var(--info-50);color:var(--info-600);
+    font-size:11px;font-weight:600}
+  .warranty-badge.eco{background:var(--eco-50);color:var(--eco-600)}
+  .warranty-badge.sun{background:var(--sun-50);color:var(--sun-700)}
+  .tariff-section{background:linear-gradient(135deg,rgba(255,201,60,.08),rgba(255,159,28,.04));
+    border-color:var(--sun-500)}
+  .tariff-section h3{color:var(--sun-700)}
+  .production-section{background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(16,185,129,.02));
+    border-color:var(--eco-500)}
+  .production-section h3{color:var(--eco-600)}
+  .chart-card{margin-top:20px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-card)}
+  .chart-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+  .chart-head h3{font-size:14px;font-weight:600}
+  .chart-head span{font-size:12px;color:var(--text-muted)}
+  .chart-svg{width:100%;height:180px;display:block}
+  .chart-caption{margin-top:8px;text-align:center;font-size:11px;color:var(--text-muted)}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+    padding:16px;box-shadow:var(--shadow-card)}
+  .tile-label{font-size:11px;font-weight:500;color:var(--text-muted)}
+  .tile-value{margin-top:4px;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .eco-callout{margin-top:16px;display:flex;align-items:center;gap:12px;
+    background:var(--eco-50);border-radius:var(--r-md);padding:16px}
+  .eco-callout .emoji{font-size:24px}
+  .eco-callout .text-label{font-size:12px;color:var(--eco-600)}
+  .eco-callout .text-value{font-size:14px;font-weight:600;color:var(--eco-600);margin-top:2px}
+  .details{margin-top:16px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-md);overflow:hidden}
+  .details summary{padding:16px;cursor:pointer;font-size:14px;font-weight:500;list-style:none;
+    display:flex;justify-content:space-between;align-items:center}
+  .details summary::-webkit-details-marker{display:none}
+  .details summary::after{content:"▾";font-size:12px;color:var(--text-muted);transition:transform .2s}
+  .details[open] summary::after{transform:rotate(180deg)}
+  .table-wrap{padding:0 16px 16px;max-height:360px;overflow:auto}
+  .year-table{width:100%;border-collapse:collapse;font-size:11px}
+  .year-table th,.year-table td{padding:6px 4px;text-align:right;font-variant-numeric:tabular-nums}
+  .year-table th{color:var(--text-muted);font-weight:500;position:sticky;top:0;
+    background:var(--surface);border-bottom:1px solid var(--border)}
+  .year-table td:first-child,.year-table th:first-child{text-align:left}
+  .year-table tr.positive td{color:var(--eco-600)}
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;padding-bottom:8px}
+  .count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;
+    height:24px;padding:0 8px;background:var(--sun-50);color:var(--sun-700);
+    border-radius:var(--r-full);font-size:12px;font-weight:600}
+  .preset-row{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+  .preset-row > span{font-size:12px;color:var(--text-muted)}
+  .chip-mini{padding:8px 14px;border-radius:var(--r-full);border:1px solid var(--border);
+    background:var(--surface);font-size:12px;font-weight:500;color:var(--text-secondary);transition:all .15s}
+  .chip-mini:hover{border-color:var(--sun-700);color:var(--sun-700)}
+  .scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:12px;margin-bottom:20px}
+  .scenario-card{position:relative;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow-card);
+    animation:numPop .4s cubic-bezier(.22,1,.36,1)}
+  .scenario-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .scenario-name{font-size:13px;font-weight:600}
+  .scenario-del{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;color:var(--text-muted);font-size:14px}
+  .scenario-del:hover{background:var(--danger-50);color:var(--danger-500)}
+  .scenario-big{font-size:22px;font-weight:700;letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;background:var(--sun-grad);-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .scenario-big.no-payback{background:none;-webkit-text-fill-color:var(--danger-500);
+    color:var(--danger-500);font-size:16px}
+  .scenario-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+  .scenario-metrics{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+  .scenario-metric{display:flex;justify-content:space-between;font-size:11px;margin-top:6px}
+  .scenario-metric .lbl{color:var(--text-muted)}
+  .scenario-metric .val{font-weight:600;font-variant-numeric:tabular-nums}
+  .compare-section{background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-card);margin-top:16px}
+  .compare-section h3{font-size:14px;font-weight:600;margin-bottom:16px}
+  .bar-row{display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:center;margin-bottom:12px}
+  .bar-row:last-child{margin-bottom:0}
+  .bar-label{font-size:12px;color:var(--text-secondary);font-weight:500}
+  .bar-track{position:relative;height:28px;background:var(--bg-subtle);
+    border-radius:var(--r-full);overflow:hidden}
+  .bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--sun-grad);
+    border-radius:var(--r-full);animation:barGrow .6s cubic-bezier(.22,1,.36,1);
+    display:flex;align-items:center;justify-content:flex-end;padding-right:10px;overflow:hidden}
+  .bar-fill.eco{background:linear-gradient(135deg,#34D399,#10B981)}
+  .bar-fill.danger{background:linear-gradient(135deg,#F87171,#EF4444)}
+  .bar-value{font-size:11px;font-weight:700;color:#0E1B2C;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @keyframes barGrow{from{width:0 !important}}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}
+  .empty-state .emoji{font-size:48px;display:block;margin-bottom:16px;opacity:.6}
+  .empty-state h3{font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
+  .empty-state p{font-size:13px;line-height:1.5}
+  .project-list{display:flex;flex-direction:column;gap:12px}
+  .project-card{background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow-card);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;transition:border-color .15s}
+  .project-card:hover{border-color:var(--sun-700)}
+  .project-body{flex:1;cursor:pointer;min-width:0}
+  .project-name{font-size:15px;font-weight:600;margin-bottom:4px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .project-meta{font-size:12px;color:var(--text-muted)}
+  .project-del{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;
+    align-items:center;justify-content:center;color:var(--text-muted);font-size:16px}
+  .project-del:hover{background:var(--danger-50);color:var(--danger-500)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--text-primary);color:var(--bg-base);padding:12px 20px;
+    border-radius:var(--r-full);font-size:14px;font-weight:500;opacity:0;
+    transition:opacity .3s,transform .3s;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.2);
+    pointer-events:none;max-width:calc(100vw - 48px);text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media print{
+    .app{max-width:100%;padding:0}
+    .top-nav,.edit-btn,.action-grid,.back-btn,.welcome-spacer,.link-btn,
+    .preset-row,.project-del,.toast,.preset-years{display:none !important}
+    .screen{animation:none;padding-top:0}
+    .hero-card{box-shadow:none}
+    .details{page-break-inside:avoid}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// ═══════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════
+const STORAGE_THEME     = 'solarpayback_theme_v3';
+const STORAGE_PROJECTS  = 'solarpayback_projects_v3';
+const STORAGE_SCENARIOS = 'solarpayback_scenarios_v3';
+
+const DAYS_PER_YEAR  = 365;
+const MONTHS_PER_YEAR = 12;
+
+const DEFAULT_INPUT = {
+  systemKwp: 5,
+  yieldPerKwp: 1460,
+  initialCost: 140000,
+  subsidy: true,
+  subsidyAmount: 50000,
+  paymentType: 'loan',
+  interestRate: 2.5,
+  interestType: 'flat',
+  loanMonths: 84,
+  loanYears: 7,
+  selfConsumptionRate: 0.25,
+  tariffType: 'normal',
+  electricityTariff: 4.8,
+  touOnPeak: 6.4,
+  touOffPeak: 3.0,
+  touOnPeakPct: 0.65,
+  exportTariff: 2.2,
+  degradationRate: 0.01,
+  maintenanceAnnual: 5000,
+  installationWarrantyYears: 2,
+  warrantyYears: 7,
+  projectYears: 25,
+  discountRate: 0.05,
+  tariffEscalation: 0.03,
+  monthlyUsageKwh: 1200,
+};
+
+const state = {
+  screen: 'welcome',
+  step: 0,
+  input: { ...DEFAULT_INPUT },
+  result: null,
+  scenarios: [],
+  theme: localStorage.getItem(STORAGE_THEME) || 'light',
+};
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function getDailyProduction(input) {
+  return (input.yieldPerKwp * input.systemKwp) / DAYS_PER_YEAR;
+}
+function getYearlyProduction(input) {
+  return input.yieldPerKwp * input.systemKwp;
+}
+function getMonthlyAvgProduction(input) {
+  return getYearlyProduction(input) / MONTHS_PER_YEAR;
+}
+function fmtDaily(n) {
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(1);
+}
+function fmtMonthly(n) { return n.toFixed(1); }
+function getEffectiveTariff(input) {
+  if (input.tariffType === 'tou') {
+    return input.touOnPeak * input.touOnPeakPct
+         + input.touOffPeak * (1 - input.touOnPeakPct);
+  }
+  return input.electricityTariff;
+}
+
+// ═══════════════════════════════════════════════
+//  CALCULATION
+// ═══════════════════════════════════════════════
+function calcLoan(principal, annualRatePct, months, type) {
+  const annualRate = annualRatePct / 100;
+  if (type === 'flat') {
+    const years = months / 12;
+    const totalInterest = principal * annualRate * years;
+    const totalPay = principal + totalInterest;
+    const monthly = totalPay / months;
+    return { monthly, totalPay, totalInterest };
+  } else {
+    const r = annualRate / 12;
+    if (r === 0) return { monthly: principal / months, totalPay: principal, totalInterest: 0 };
+    const pow = Math.pow(1 + r, months);
+    const monthly = principal * r * pow / (pow - 1);
+    const totalPay = monthly * months;
+    return { monthly, totalPay, totalInterest: totalPay - principal };
+  }
+}
+function loanPaymentForYear(year, monthly, months) {
+  const before = (year - 1) * 12;
+  if (before >= months) return 0;
+  const active = Math.min(year * 12, months) - before;
+  return Math.max(0, active) * monthly;
+}
+
+function calculateSolar(input) {
+  const investment = Math.max(0, input.initialCost - (input.subsidy ? input.subsidyAmount : 0));
+  const instWarranty = input.installationWarrantyYears ?? 2;
+  const prodWarranty = input.warrantyYears ?? 7;
+  const warrantyEnd = Math.max(instWarranty, prodWarranty);
+  const maintenanceStartYear = warrantyEnd + 1;
+  const effectiveTariff = getEffectiveTariff(input);
+
+  let loan = null;
+  if (input.paymentType === 'loan') {
+    loan = calcLoan(investment, input.interestRate, input.loanMonths, input.interestType);
+    loan.yearlyApprox = loan.monthly * 12;
+    loan.years = input.loanMonths / 12;
+  }
+
+  let totalSavings = 0, totalExport = 0, totalMaintenance = 0, totalLoanPayments = 0;
+  let totalProduction = 0;
+  const rows = [];
+  let cumulative = -investment;
+  let npv = -investment;
+
+  for (let year = 1; year <= input.projectYears; year++) {
+    const production = input.systemKwp * input.yieldPerKwp
+      * Math.pow(1 - input.degradationRate, year - 1);
+    const tariff = effectiveTariff * Math.pow(1 + input.tariffEscalation, year - 1);
+    const savings = production * input.selfConsumptionRate * tariff;
+    const exportRev = production * (1 - input.selfConsumptionRate) * input.exportTariff;
+    const maintenance = year >= maintenanceStartYear ? input.maintenanceAnnual : 0;
+    const loanPmt = loan ? loanPaymentForYear(year, loan.monthly, input.loanMonths) : 0;
+
+    const net = savings + exportRev - maintenance - loanPmt;
+    cumulative += net;
+    npv += net / Math.pow(1 + input.discountRate, year);
+
+    totalSavings += savings;
+    totalExport += exportRev;
+    totalMaintenance += maintenance;
+    totalLoanPayments += loanPmt;
+    totalProduction += production;
+
+    rows.push({
+      year, production, savings, exportRevenue: exportRev,
+      maintenance, loanPayment: loanPmt, netCashFlow: net, cumulative
+    });
+  }
+
+  let paybackYears = null;
+  const fp = rows.find(r => r.cumulative >= 0);
+  if (fp) {
+    const prev = rows[fp.year - 2];
+    const prevCum = prev ? prev.cumulative : -investment;
+    paybackYears = fp.year - 1 + Math.abs(prevCum) / fp.netCashFlow;
+  }
+  const paybackDate = paybackYears
+    ? new Date(Date.now() + paybackYears * 365.25 * 864e5)
+        .toLocaleDateString('th-TH', { year: 'numeric', month: 'long' })
+    : '—';
+  const cfs = [-investment, ...rows.map(r => r.netCashFlow)];
+
+  // ── Monthly metrics — ใช้ 365/12 วัน/เดือน (สอดคล้องกับ helper) ──
+  const dailyProd   = (input.systemKwp * input.yieldPerKwp) / DAYS_PER_YEAR;
+  const monthlyProd = dailyProd * (DAYS_PER_YEAR / MONTHS_PER_YEAR); // = yearly / 12
+  const monthlySelfKwh   = monthlyProd * input.selfConsumptionRate;
+  const monthlyExportKwh = monthlyProd * (1 - input.selfConsumptionRate);
+  const monthlySavings   = monthlySelfKwh * effectiveTariff;
+  const monthlyExportRev = monthlyExportKwh * input.exportTariff;
+  const monthlyRevenue   = monthlySavings + monthlyExportRev;
+  const monthlyLoan      = loan ? loan.monthly : 0;
+
+  // ── Baseline ──
+  const usage = input.monthlyUsageKwh || 1200;
+  const normalRate = input.electricityTariff;
+  const touBlended = input.touOnPeak * input.touOnPeakPct + input.touOffPeak * (1 - input.touOnPeakPct);
+  const billNormalNoSolar = usage * normalRate;
+  const billTouNoSolar    = usage * touBlended;
+
+  const selfUsedN = Math.min(monthlySelfKwh, usage);
+  const remainN   = Math.max(0, usage - selfUsedN);
+  const excessN   = monthlySelfKwh > usage ? (monthlySelfKwh - usage) + monthlyExportKwh : monthlyExportKwh;
+  const billSolarNormal = remainN * normalRate - excessN * input.exportTariff;
+
+  const selfUsedT = Math.min(monthlySelfKwh, usage);
+  const remainT   = Math.max(0, usage - selfUsedT);
+  const excessT   = monthlySelfKwh > usage ? (monthlySelfKwh - usage) + monthlyExportKwh : monthlyExportKwh;
+  const billSolarTou = remainT * touBlended - excessT * input.exportTariff;
+
+  const saveSolarNormal = billNormalNoSolar - billSolarNormal;
+  const saveSolarTou    = billNormalNoSolar - billSolarTou;
+  const saveTouOnly     = billNormalNoSolar - billTouNoSolar;
+
+  const monthlyBenefit = input.tariffType === 'tou' ? saveSolarTou : saveSolarNormal;
+  const monthlyNet = monthlyBenefit - monthlyLoan;
+
+  let simplePaybackMonths = null;
+  if (monthlyBenefit > 0) {
+    if (loan && loan.totalPay > 0) simplePaybackMonths = loan.totalPay / monthlyBenefit;
+    else if (investment > 0)       simplePaybackMonths = investment / monthlyBenefit;
+  }
+
+  // ── Phase totals — cash-flow basis (ผลรวม = simpleTotal25) ──
+  const loanYears    = loan ? (input.loanMonths / 12) : 0;
+  const annualBenefit = monthlyBenefit * 12;
+  const annualLoan    = monthlyLoan * 12;
+  const totalBenefit25 = annualBenefit * 25;
+  const totalCashOut  = loan ? loan.totalPay : investment;
+  const simpleTotal25 = totalBenefit25 - totalCashOut;
+
+  const simplePhaseCash = (start, end) => {
+    let total = 0;
+    for (let y = start; y <= end; y++) {
+      if (y === 1) {
+        // ปีแรกนับเงินจ่ายออกครั้งแรก (เงินลงทุน ถ้าสด / ค่างวดปีแรก ถ้ากู้)
+        total += annualBenefit - (loan ? annualLoan : investment);
+      } else {
+        const stillLoan = loan && y <= loanYears;
+        total += annualBenefit - (stillLoan ? annualLoan : 0);
+      }
+    }
+    return total;
+  };
+  const simplePhase1 = simplePhaseCash(1, 7);
+  const simplePhase2 = simplePhaseCash(8, 20);
+  const simplePhase3 = simplePhaseCash(21, 25);
+
+  return {
+    rows, investment, loan,
+    paybackYears, paybackDate,
+    totalNet: simpleTotal25,
+    profitLoss: simpleTotal25,
+    roi: totalCashOut > 0 ? (simpleTotal25 / totalCashOut) * 100 : 0,
+    npv, irr: irr(cfs),
+    totalSavings, totalExport, totalMaintenance, totalLoanPayments,
+    totalProduction,
+    co2SavedKg: totalProduction * 0.5,
+    treesEquivalent: Math.round((totalProduction * 0.5) / 21),
+    installationWarrantyYears: instWarranty,
+    productWarrantyYears: prodWarranty,
+    warrantyEnd, maintenanceStartYear,
+    effectiveTariff,
+    monthlyProd, monthlySelfKwh, monthlyExportKwh,
+    monthlySavings, monthlyExportRev, monthlyRevenue,
+    monthlyLoan, monthlyNet, monthlyBenefit,
+    simplePaybackMonths,
+    dailyProd,
+    usage, normalRate, touBlended,
+    billNormalNoSolar, billTouNoSolar, billSolarNormal, billSolarTou,
+    saveSolarNormal, saveSolarTou, saveTouOnly,
+    selfUsed: selfUsedN, remainingUsage: remainN, excessExport: excessN,
+    // phases (cash-flow basis; sum = simpleTotal25)
+    simplePhase1, simplePhase2, simplePhase3, simpleTotal25,
+    annualBenefit, annualLoan, totalBenefit25, totalCashOut,
+  };
+}
+
+function irr(cfs, guess = 0.1) {
+  let rate = guess;
+  for (let i = 0; i < 100; i++) {
+    let npv = 0, dnpv = 0;
+    for (let t = 0; t < cfs.length; t++) {
+      const d = Math.pow(1 + rate, t);
+      npv += cfs[t] / d;
+      dnpv -= (t * cfs[t]) / (d * (1 + rate));
+    }
+    if (Math.abs(npv) < 1e-6) return rate;
+    if (dnpv === 0) break;
+    rate = rate - npv / dnpv;
+    if (rate <= -0.99 || rate > 10) return null;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+//  FORMATTERS
+// ═══════════════════════════════════════════════
+const fmtTHB = n => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(n);
+const fmtNum = (n, d = 1) => new Intl.NumberFormat('th-TH', {
+  minimumFractionDigits: d, maximumFractionDigits: d,
+}).format(n);
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function fmtPayback(y) {
+  if (y === null || y === undefined) return 'ไม่คืนทุน';
+  const yr = Math.floor(y);
+  const mo = Math.round((y - yr) * 12);
+  return mo === 0 ? `${yr} ปี` : `${yr} ปี ${mo} เดือน`;
+}
+function fmtPaybackMonths(months) {
+  if (months === null || months === undefined || months <= 0) return 'ไม่คืนทุน';
+  const yr = Math.floor(months / 12);
+  const mo = Math.round(months % 12);
+  if (yr === 0) return `${mo} เดือน`;
+  if (mo === 0) return `${yr} ปี (${Math.round(months)} เดือน)`;
+  return `${yr} ปี ${mo} เดือน (${Math.round(months)} เดือน)`;
+}
+function fmtLoanTerm(months) {
+  const years = months / 12;
+  if (months % 12 === 0) return `${years} ปี (${months} งวด)`;
+  return `${fmtNum(years, 1)} ปี (${months} งวด)`;
+}
+
+// ═══════════════════════════════════════════════
+//  STORAGE / THEME / TOAST
+// ═══════════════════════════════════════════════
+function loadProjects() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_PROJECTS) || '[]'); }
+  catch { return []; }
+}
+function saveProjects(list) {
+  localStorage.setItem(STORAGE_PROJECTS, JSON.stringify(list.slice(0, 20)));
+}
+function loadScenarios() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_SCENARIOS) || '[]');
+    return stored
+      .map(s => ({ ...s, result: s.input ? calculateSolar(s.input) : null }))
+      .filter(s => s.result);
+  } catch { return []; }
+}
+function saveScenarios(list) {
+  try {
+    const slim = list.map(s => ({ id: s.id, name: s.name, input: s.input }));
+    localStorage.setItem(STORAGE_SCENARIOS, JSON.stringify(slim.slice(0, 4)));
+  } catch {}
+}
+function applyTheme() {
+  document.documentElement.classList.toggle('dark', state.theme === 'dark');
+  localStorage.setItem(STORAGE_THEME, state.theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#0F1419' : '#FBF9F4');
+}
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(); render();
+}
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2200);
+}
+
+// ═══════════════════════════════════════════════
+//  ICONS / NAV
+// ═══════════════════════════════════════════════
+const ICON_HOME = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+const ICON_SUN = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const ICON_MOON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
+function renderTopNav(showHome) {
+  return `<nav class="top-nav">
+    ${showHome
+      ? `<button class="icon-btn" data-action="home" aria-label="กลับหน้าหลัก" title="หน้าหลัก">${ICON_HOME}</button>`
+      : '<div></div>'}
+    <button class="icon-btn" data-action="toggle-theme" aria-label="เปลี่ยนธีม" title="เปลี่ยนธีม">
+      <span class="icon-moon">${ICON_MOON}</span>
+      <span class="icon-sun">${ICON_SUN}</span>
+    </button>
+  </nav>`;
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER ROOT
+// ═══════════════════════════════════════════════
+function render() {
+  const app = document.getElementById('app');
+  switch (state.screen) {
+    case 'welcome':  app.innerHTML = renderWelcome();  break;
+    case 'setup':    app.innerHTML = renderSetup();    break;
+    case 'results':  app.innerHTML = renderResults();  break;
+    case 'compare':  app.innerHTML = renderCompare();  break;
+    case 'projects': app.innerHTML = renderProjects(); break;
+  }
+  bindEvents();
+}
+
+// ═══════════════════════════════════════════════
+//  WELCOME
+// ═══════════════════════════════════════════════
+function renderWelcome() {
+  const savedCount = loadProjects().length;
+  return `
+  ${renderTopNav(false)}
+  <div class="screen welcome">
+    <div class="sun-hero"><div class="sun-glow"></div><div class="sun-disc">☀️</div></div>
+    <h1>รู้ทันทีว่าโซล่าเซลล์<br><span class="accent">คุ้มไหม</span> ใน 30 วินาที</h1>
+    <p class="subtitle">จุดคุ้มทุน · กำไร · รองรับค่าไฟปกติ & TOU</p>
+    <div class="teaser">
+      <div class="teaser-row">
+        <div>
+          <div class="teaser-label">ตัวอย่าง</div>
+          <div class="teaser-value">5 kWp · 20 หน่วย/วัน</div>
+        </div>
+        <div style="text-align:right">
+          <div class="teaser-label">คืนทุน</div>
+          <div class="teaser-value eco">~5–7 ปี</div>
+        </div>
+      </div>
+      <div class="teaser-profit">
+        <span>ผลิตไฟรวม/ปี (365 วัน)</span>
+        <strong>7,300 หน่วย</strong>
+      </div>
+    </div>
+    <div class="welcome-spacer"></div>
+    <button class="btn-primary" data-action="start">เริ่มคำนวณ →</button>
+    <button class="btn-secondary" data-action="copy-source" style="margin-top:12px">📋 คัดลอกโค้ด HTML ทั้งไฟล์</button>
+    ${savedCount > 0 ? `
+      <button class="link-btn" data-action="projects">📁 ดูโปรเจกต์ที่บันทึก (${savedCount})</button>
+    ` : ''}
+    <p class="disclaimer">ผลคำนวณเป็นการประมาณ ขึ้นกับค่าไฟจริงและนโยบายพื้นที่</p>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  WIZARD
+// ═══════════════════════════════════════════════
+function renderSetup() {
+  const total = 3;
+  const pct = ((state.step + 1) / total) * 100;
+  return `
+  ${renderTopNav(true)}
+  <div class="screen wizard">
+    <div class="wizard-head">
+      <button class="back-btn" data-action="back">← ย้อนกลับ</button>
+      <span class="step-count">ขั้นที่ ${state.step + 1} จาก ${total}</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    ${renderStepContent()}
+    <div class="wizard-spacer"></div>
+    <button class="btn-primary" data-action="next">
+      ${state.step === total - 1 ? 'ดูผลลัพธ์ →' : 'ถัดไป →'}
+    </button>
+  </div>`;
+}
+
+function renderDailyExplain(input) {
+  const daily = getDailyProduction(input);
+  const monthly = getMonthlyAvgProduction(input);
+  const yearly = getYearlyProduction(input);
+  return `
+    <div><strong>1 ปี = ${DAYS_PER_YEAR} วัน</strong> (มาตรฐานอุตสาหกรรมโซล่า ไม่ใช่ 360 วัน)</div>
+    <div style="margin-top:6px">
+      • ต่อวัน: <code>${fmtDaily(daily)}</code> หน่วย<br>
+      • ต่อเดือน (เฉลี่ย): <code>${fmtDaily(daily)} × ${DAYS_PER_YEAR} ÷ ${MONTHS_PER_YEAR} = ${fmtMonthly(monthly)}</code> หน่วย<br>
+      • ต่อปี: <code>${fmtDaily(daily)} × ${DAYS_PER_YEAR} = ${fmtTHB(yearly)}</code> หน่วย
+    </div>
+    <div style="margin-top:8px;font-size:11px;opacity:.85">
+      ⚠️ ถ้าใช้ 360 วัน (12×30) จะได้ ${fmtTHB(daily * 360)} หน่วย/ปี
+      — ต่างจากที่ใช้จริง ${fmtTHB(yearly - daily * 360)} หน่วย (~${fmtNum(((yearly - daily*360)/Math.max(yearly,1))*100, 1)}%)
+    </div>
+  `;
+}
+
+function renderStepContent() {
+  const i = state.input;
+
+  // ── Step 1 ──
+  if (state.step === 0) {
+    const net = Math.max(0, i.initialCost - (i.subsidy ? i.subsidyAmount : 0));
+    const perKwp = i.initialCost / Math.max(i.systemKwp, 0.1);
+    const daily = getDailyProduction(i);
+    const monthly = getMonthlyAvgProduction(i);
+    const yearly = getYearlyProduction(i);
+
+    return `
+    <h2>ระบบและค่าติดตั้ง</h2>
+    <p class="helper">ระบุขนาด กำลังผลิต ค่าติดตั้ง และเงินสนับสนุน</p>
+
+    <div class="field">
+      <label>ขนาดระบบ (kWp)</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="systemKwp"
+          value="${i.systemKwp}" step="0.5" min="0.5" max="100">
+        <span class="field-unit">kWp</span>
+      </div>
+      <div class="field-hint">ขนาดที่ใช้บ่อย: 3–10 kWp</div>
+    </div>
+
+    <div class="field">
+      <label>ผลิตไฟได้เฉลี่ยต่อวัน</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="dailyProductionKwh"
+          value="${fmtDaily(daily)}" step="0.5" min="0.5" max="500">
+        <span class="field-unit">หน่วย/วัน</span>
+      </div>
+      <div class="field-hint" id="dailyHint">
+        <strong>ต่อเดือน (เฉลี่ย): ${fmtMonthly(monthly)} หน่วย</strong>
+        · <strong>ต่อปี: ${fmtTHB(yearly)} หน่วย</strong>
+      </div>
+      <div class="field-hint">
+        💡 ระบบ 5 kWp ในประเทศไทยผลิตได้เฉลี่ย ~15–25 หน่วย/วัน
+      </div>
+    </div>
+
+    <div class="explain-box">
+      <div class="title">📅 การแปลงหน่วยที่ใช้</div>
+      <div id="dailyExplainContent">${renderDailyExplain(i)}</div>
+    </div>
+
+    <div class="field">
+      <label>ค่าติดตั้งรวม (ก่อนหักเงินสนับสนุน)</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="numeric" data-field="initialCost"
+          value="${i.initialCost}" step="1000" min="10000">
+        <span class="field-unit">บาท</span>
+      </div>
+      <div class="field-hint">≈ ${fmtTHB(perKwp)} บาท/kWp</div>
+    </div>
+
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">💰 รับเงินสนับสนุน ฿50,000</div>
+        <div class="switch-hint">จากโครงการภาครัฐ (ถ้ามี)</div>
+      </div>
+      <div class="switch ${i.subsidy ? 'on' : ''}" data-toggle="subsidy"></div>
+    </div>
+
+    <div class="info-box">
+      <span class="info-label">ยอดชำระจริง</span>
+      <span class="info-value">฿${fmtTHB(net)}</span>
+    </div>`;
+  }
+
+  // ── Step 2 ──
+  if (state.step === 1) {
+    const net = Math.max(0, i.initialCost - (i.subsidy ? i.subsidyAmount : 0));
+    const isLoan = i.paymentType === 'loan';
+    const loan = isLoan ? calcLoan(net, i.interestRate, i.loanMonths, i.interestType) : null;
+    const currentYears = i.loanMonths / 12;
+    const yearPresets = [3, 5, 7, 10, 15];
+
+    return `
+    <h2>การชำระเงิน</h2>
+    <p class="helper">ยอดที่ต้องชำระ: <strong>฿${fmtTHB(net)}</strong></p>
+
+    <div class="field">
+      <label>ชำระแบบ</label>
+      <div class="segmented">
+        <button class="${!isLoan ? 'active' : ''}" data-payment="cash">💵 เงินสด</button>
+        <button class="${isLoan ? 'active' : ''}" data-payment="loan">🏦 เงินกู้</button>
+      </div>
+    </div>
+
+    ${isLoan ? `
+      <div class="field">
+        <label>อัตราดอกเบี้ย (%/ปี)</label>
+        <div class="field-input-wrap">
+          <input type="number" inputmode="decimal" data-field="interestRate"
+            value="${i.interestRate}" step="0.1" min="0" max="30">
+          <span class="field-unit">%/ปี</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>ประเภทดอกเบี้ย</label>
+        <div class="segmented">
+          <button class="${i.interestType === 'reducing' ? 'active' : ''}"
+            data-interest-type="reducing">ลดต้นลดดอก</button>
+          <button class="${i.interestType === 'flat' ? 'active' : ''}"
+            data-interest-type="flat">คงที่ (Flat)</button>
+        </div>
+        <div class="field-hint">
+          ${i.interestType === 'reducing'
+            ? 'ลดต้นลดดอก: ดอกเบี้ยคิดจากเงินต้นที่เหลือ → ประหยัดกว่าสำหรับสัญญาระยะยาว'
+            : 'คงที่: ดอกเบี้ยคิดจากเงินต้นเต็มจำนวนตลอดอายุสัญญา'}
+        </div>
+      </div>
+      <div class="field">
+        <label>ระยะเวลาผ่อนชำระ (ปี)</label>
+        <div class="field-input-wrap">
+          <input type="number" inputmode="numeric" data-field="loanYears"
+            value="${Number.isInteger(currentYears) ? currentYears : fmtNum(currentYears, 1)}"
+            step="1" min="1" max="30">
+          <span class="field-unit">ปี</span>
+        </div>
+        <div class="field-hint" id="loanTermHint">= <strong>${i.loanMonths} งวด</strong> (${i.loanMonths} เดือน)</div>
+        <div class="preset-years">
+          ${yearPresets.map(y => `
+            <button class="preset-year-btn ${Math.abs(currentYears - y) < 0.05 ? 'active' : ''}"
+              data-preset-years="${y}">${y} ปี</button>
+          `).join('')}
+        </div>
+      </div>
+      ${loan ? `
+        <div style="margin-top:20px">
+          <div class="info-box">
+            <span class="info-label">ค่างวด/เดือน</span>
+            <span class="info-value" id="loanMonthly">฿${fmtNum(loan.monthly, 0)}</span>
+          </div>
+          <div class="info-box">
+            <span class="info-label">ระยะเวลาผ่อน</span>
+            <span class="info-value" id="loanTermValue">${fmtLoanTerm(i.loanMonths)}</span>
+          </div>
+          <div class="info-box danger">
+            <span class="info-label">ดอกเบี้ยรวม</span>
+            <span class="info-value" id="loanInterest">฿${fmtTHB(loan.totalInterest)}</span>
+          </div>
+          <div class="info-box">
+            <span class="info-label">ยอดผ่อนรวมทั้งหมด</span>
+            <span class="info-value" id="loanTotalPay">฿${fmtTHB(loan.totalPay)}</span>
+          </div>
+          ${i.interestType === 'flat' ? `
+            <div class="warn-box">
+              💡 ดอกเบี้ยคงที่ (Flat) คิดจากเงินต้นเต็มจำนวนตลอดสัญญา
+              — ลองเปรียบเทียบ "ลดต้นลดดอก" เพื่อดูส่วนต่าง
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+    ` : `
+      <div class="info-box eco" style="margin-top:24px">
+        <span class="info-label">💰 ชำระเงินสด</span>
+        <span class="info-value">฿${fmtTHB(net)}</span>
+      </div>
+      <div class="warn-box" style="margin-top:12px">
+        ไม่มีภาระดอกเบี้ย — จุดคุ้มทุนจะเร็วกว่าการกู้
+      </div>
+    `}`;
+  }
+
+  // ── Step 3 ──
+  const pct = Math.round(i.selfConsumptionRate * 100);
+  const warrantyEnd = Math.max(i.installationWarrantyYears || 0, i.warrantyYears || 0);
+  const maintenanceStartYear = warrantyEnd + 1;
+  const isTOU = i.tariffType === 'tou';
+  const effTariff = getEffectiveTariff(i);
+
+  return `
+  <h2>การใช้ไฟและบำรุงรักษา</h2>
+  <p class="helper">ตั้งค่าพฤติกรรมการใช้ไฟ ค่าไฟ และการรับประกัน</p>
+
+  <div class="field">
+    <label>หน่วยไฟที่ใช้เฉลี่ยต่อเดือน (ฐานคำนวณ)</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="numeric" data-field="monthlyUsageKwh"
+        value="${i.monthlyUsageKwh}" step="10" min="50" max="50000">
+      <span class="field-unit">หน่วย/เดือน</span>
+    </div>
+    <div class="field-hint">ฐานคำนวณ = ค่าไฟปกติล้วน (ไม่มีโซล่า/TOU) · บ้านทั่วไป 400–1,500 หน่วย</div>
+  </div>
+
+  <div class="big-number">
+    <span class="num" id="bigNum">${pct}</span><span class="unit">%</span>
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--text-secondary);margin-top:4px">
+    ใช้ไฟเองจากโซล่า (ที่เหลือขายคืน)
+  </p>
+
+  <div class="slider-wrap">
+    <input type="range" class="slider" min="0" max="100" value="${pct}"
+      data-field="selfConsumptionRate" style="--val:${pct}%">
+    <div class="slider-labels"><span>0%</span><span>100%</span></div>
+  </div>
+
+  <div class="preset-chips">
+    ${[['บ้าน 60%', 0.6], ['ธุรกิจ 80%', 0.8], ['โรงงาน 95%', 0.95]]
+      .map(([label, v]) => `
+        <button class="chip ${Math.abs(i.selfConsumptionRate - v) < 0.01 ? 'active' : ''}"
+          data-preset="${v}">${label}</button>`).join('')}
+  </div>
+
+  <div class="field">
+    <label>ประเภทค่าไฟ</label>
+    <div class="segmented">
+      <button class="${!isTOU ? 'active' : ''}" data-tariff-type="normal">⚡ ค่าไฟปกติ</button>
+      <button class="${isTOU ? 'active' : ''}" data-tariff-type="tou">🕐 ค่าไฟ TOU</button>
+    </div>
+  </div>
+
+  ${!isTOU ? `
+    <div class="field">
+      <label>ค่าไฟที่ใช้ต่อหน่วย</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="electricityTariff"
+          value="${i.electricityTariff}" step="0.1" min="0.5">
+        <span class="field-unit">บาท/kWh</span>
+      </div>
+      <div class="field-hint">อัตราเฉลี่ยบ้าน 4.0–4.8 · ธุรกิจ 4.2–4.8 บาท/kWh</div>
+    </div>
+  ` : `
+    <div class="field">
+      <label>🕐 On-Peak (จ–ศ 9:00–22:00)</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="touOnPeak"
+          value="${i.touOnPeak}" step="0.1" min="0.5">
+        <span class="field-unit">บาท/kWh</span>
+      </div>
+      <div class="field-hint">อัตราช่วง peak ทั่วไป ~6.0–6.5 บาท/kWh</div>
+    </div>
+    <div class="field">
+      <label>🌙 Off-Peak (จ–ศ 22:00–9:00, ส–อา ทั้งวัน)</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="touOffPeak"
+          value="${i.touOffPeak}" step="0.1" min="0.5">
+        <span class="field-unit">บาท/kWh</span>
+      </div>
+      <div class="field-hint">อัตราช่วง off-peak ทั่วไป ~2.8–3.2 บาท/kWh</div>
+    </div>
+    <div class="field">
+      <label>% ที่ใช้ไฟในช่วง On-Peak</label>
+      <div class="field-input-wrap">
+        <input type="number" inputmode="decimal" data-field="touOnPeakPctDisplay"
+          value="${Math.round(i.touOnPeakPct * 100)}" step="1" min="0" max="100">
+        <span class="field-unit">%</span>
+      </div>
+      <div class="field-hint">บ้านทั่วไป ~60–70% · ตั้งค่าแยกตามพฤติกรรมจริง</div>
+      <div class="preset-chips" style="margin-top:12px">
+        ${[['บ้าน 65%', 0.65], ['กลางวันเยอะ 80%', 0.8], ['กลางคืนเยอะ 40%', 0.4]]
+          .map(([label, v]) => `
+            <button class="chip ${Math.abs(i.touOnPeakPct - v) < 0.01 ? 'active' : ''}"
+              data-tou-pct="${v}">${label}</button>`).join('')}
+      </div>
+    </div>
+    <div class="info-box sun" style="margin-top:16px">
+      <span class="info-label">⚡ อัตรา blended ที่ใช้คำนวณ</span>
+      <span class="info-value" id="blendedRate">฿${fmtNum(effTariff, 2)}/kWh</span>
+    </div>
+    <div class="warn-box" id="blendedWarn">
+      💡 TOU blended rate = (${i.touOnPeak} × ${Math.round(i.touOnPeakPct*100)}%)
+      + (${i.touOffPeak} × ${Math.round((1-i.touOnPeakPct)*100)}%)
+    </div>
+  `}
+
+  <div class="field">
+    <label>ราคารับซื้อไฟคืน</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="decimal" data-field="exportTariff"
+        value="${i.exportTariff}" step="0.1" min="0">
+      <span class="field-unit">บาท/kWh</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>ค่าเสื่อมแผง (%/ปี)</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="decimal" data-field="degradationRatePct"
+        value="${fmtNum(i.degradationRate * 100, 1)}" step="0.1" min="0" max="5">
+      <span class="field-unit">%/ปี</span>
+    </div>
+    <div class="field-hint">ทั่วไป 0.5–1% ต่อปี</div>
+  </div>
+
+  <div class="field">
+    <label>🛠 ระยะเวลารับประกันการติดตั้ง (ปี)</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="numeric" data-field="installationWarrantyYears"
+        value="${i.installationWarrantyYears ?? 2}" step="1" min="0" max="10">
+      <span class="field-unit">ปี</span>
+    </div>
+    <div class="field-hint">งานติดตั้ง หลังคารั่ว ขายึด สายไฟ — ปกติ 1–5 ปี</div>
+  </div>
+
+  <div class="field">
+    <label>🛡 ระยะเวลารับประกันสินค้า (แผง/อินเวอร์เตอร์) (ปี)</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="numeric" data-field="warrantyYears"
+        value="${i.warrantyYears}" step="1" min="0" max="30">
+      <span class="field-unit">ปี</span>
+    </div>
+    <div class="field-hint">แผง อินเวอร์เตอร์ — ปกติ 5–12 ปี</div>
+  </div>
+
+  <div class="info-box sun" style="margin-top:16px">
+    <span class="info-label">🛡 รวมระยะปลอดค่าซ่อม</span>
+    <span class="info-value" id="warrantyEndValue">${warrantyEnd} ปี</span>
+  </div>
+  <div class="field-hint" id="warrantyHint" style="margin-top:8px">
+    ใช้ปีที่มากกว่าระหว่างประกันการติดตั้ง (${i.installationWarrantyYears} ปี)
+    และประกันสินค้า (${i.warrantyYears} ปี) = <strong>${warrantyEnd} ปี</strong>
+  </div>
+
+  <div class="field">
+    <label>ค่าซ่อมบำรุงหลังหมดประกัน</label>
+    <div class="field-input-wrap">
+      <input type="number" inputmode="numeric" data-field="maintenanceAnnual"
+        value="${i.maintenanceAnnual}" step="500" min="0">
+      <span class="field-unit">บาท/ปี</span>
+    </div>
+    <div class="field-hint" id="maintenanceHint">เริ่มจ่ายตั้งแต่ปีที่ ${maintenanceStartYear}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  RESULTS
+// ═══════════════════════════════════════════════
+function renderResults() {
+  const r = state.result;
+  const i = state.input;
+  const isLoan = i.paymentType === 'loan';
+  const isTOU = i.tariffType === 'tou';
+  const pbSimple = r.simplePaybackMonths != null
+    ? fmtPaybackMonths(r.simplePaybackMonths)
+    : fmtPayback(r.paybackYears);
+  const pbDetail = r.simplePaybackMonths != null
+    ? `ประหยัดรวม ฿${fmtTHB(r.monthlyBenefit)}/เดือน · สุทธิ ฿${fmtTHB(r.monthlyNet)}/เดือน`
+    : `คืนทุนประมาณ ${r.paybackDate}`;
+  const profit25 = r.simpleTotal25;
+  const roiClass = profit25 >= 0 ? 'eco' : 'danger';
+  const daily = getDailyProduction(i);
+  const monthly = getMonthlyAvgProduction(i);
+  const yearly = getYearlyProduction(i);
+
+  return `
+  ${renderTopNav(true)}
+  <div class="screen">
+    <div class="results-head">
+      <h2>ผลลัพธ์ของคุณ</h2>
+      <button class="edit-btn" data-action="edit">แก้ไข</button>
+    </div>
+
+    <div class="hero-card">
+      <div class="label">💰 จุดคุ้มทุน</div>
+      <div class="hero-big">${pbSimple}</div>
+      <div class="hero-sub">${pbDetail}</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="stat-label">กำไร 25 ปี</div>
+          <div class="stat-value ${roiClass}">฿${fmtTHB(profit25)}</div>
+        </div>
+        <div class="hero-stat">
+          <div class="stat-label">${isLoan ? 'ค่างวด/เดือน' : 'เงินลงทุน'}</div>
+          <div class="stat-value sun">
+            ฿${isLoan ? fmtNum(r.loan.monthly, 0) : fmtTHB(r.investment)}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ฐานค่าไฟปกติ -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(239,68,68,.06),rgba(239,68,68,.02));border-color:var(--danger-500)">
+      <h3>📌 ฐานการคำนวณ (ค่าไฟปกติล้วน)</h3>
+      <div class="breakdown-row">
+        <span class="lbl">ใช้ไฟเฉลี่ย/เดือน</span>
+        <span class="val">${fmtTHB(r.usage)} หน่วย</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">อัตราค่าไฟปกติ</span>
+        <span class="val">฿${fmtNum(r.normalRate,2)}/หน่วย</span>
+      </div>
+      <div class="breakdown-row total">
+        <span>ค่าไฟฐาน (ไม่มีโซล่า ไม่มี TOU)</span>
+        <span class="val danger">฿${fmtTHB(r.billNormalNoSolar)}/เดือน</span>
+      </div>
+      <div class="field-hint" style="margin-top:8px">ใช้เป็นฐานเปรียบเทียบทุกกรณี เพื่อดูว่าแต่ละทางเลือกประหยัดได้เท่าไร</div>
+    </div>
+
+    <!-- เปรียบเทียบ 4 กรณี -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border-color:var(--info-500)">
+      <h3>📊 เปรียบเทียบค่าไฟ 4 กรณี (ต่อเดือน)</h3>
+      <div class="breakdown-row">
+        <span class="lbl">1. ค่าไฟปกติล้วน (ฐาน)</span>
+        <span class="val">฿${fmtTHB(r.billNormalNoSolar)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">2. TOU อย่างเดียว</span>
+        <span class="val">฿${fmtTHB(r.billTouNoSolar)} <span style="color:var(--eco-600);font-size:11px">(-฿${fmtTHB(r.saveTouOnly)})</span></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">3. โซล่า + ค่าไฟปกติ</span>
+        <span class="val eco">฿${fmtTHB(Math.max(0,r.billSolarNormal))} <span style="font-size:11px">(-฿${fmtTHB(r.saveSolarNormal)})</span></span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">4. โซล่า + TOU</span>
+        <span class="val eco">฿${fmtTHB(Math.max(0,r.billSolarTou))} <span style="font-size:11px">(-฿${fmtTHB(r.saveSolarTou)})</span></span>
+      </div>
+      <div class="explain-box" style="margin-top:12px">
+        <div class="title">สรุปการประหยัดเทียบฐาน</div>
+        <div style="font-size:12px;line-height:1.7">
+          • TOU อย่างเดียว ประหยัด ฿${fmtTHB(r.saveTouOnly)}/เดือน<br>
+          • โซล่า + ปกติ ประหยัด ฿${fmtTHB(r.saveSolarNormal)}/เดือน<br>
+          • โซล่า + TOU ประหยัด ฿${fmtTHB(r.saveSolarTou)}/เดือน <strong>(ประหยัดที่สุด)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- วิธีคิดจุดคุ้มทุนรายเดือน -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(16,185,129,.02));border-color:var(--eco-500)">
+      <h3>📅 วิธีคิดจุดคุ้มทุน (รายเดือน)</h3>
+      <div class="breakdown-row">
+        <span class="lbl">ผลิตไฟ/เดือน (เฉลี่ย = รายปี ÷ 12)</span>
+        <span class="val eco">${fmtMonthly(r.monthlyProd)} หน่วย</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">ใช้เอง (${Math.round(i.selfConsumptionRate*100)}%) × ฿${fmtNum(r.effectiveTariff,2)}</span>
+        <span class="val">฿${fmtTHB(r.monthlySavings)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">ขายคืน (${Math.round((1-i.selfConsumptionRate)*100)}%) × ฿${fmtNum(i.exportTariff,2)}</span>
+        <span class="val">฿${fmtTHB(r.monthlyExportRev)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">รายรับจากโซล่าอย่างเดียว</span>
+        <span class="val">฿${fmtTHB(r.monthlyRevenue)}</span>
+      </div>
+      ${isTOU ? `
+        <div class="breakdown-row">
+          <span class="lbl">+ ประหยัดจากค่าไฟ TOU (เทียบปกติ)</span>
+          <span class="val eco">฿${fmtTHB(Math.max(0, r.monthlyBenefit - r.monthlyRevenue))}</span>
+        </div>
+      ` : ''}
+      <div class="breakdown-row total">
+        <span>ผลประโยชน์รวมต่อเดือน${isTOU ? ' (โซล่า+TOU)' : ''}</span>
+        <span class="val eco">฿${fmtTHB(r.monthlyBenefit)}</span>
+      </div>
+      ${isLoan ? `
+        <div class="breakdown-row">
+          <span class="lbl">หักค่างวดเงินกู้/เดือน</span>
+          <span class="val danger">− ฿${fmtNum(r.monthlyLoan,0)}</span>
+        </div>
+        <div class="breakdown-row total">
+          <span>กำไรสุทธิต่อเดือน (ช่วงผ่อน)</span>
+          <span class="val ${r.monthlyNet >= 0 ? 'eco' : 'danger'}">฿${fmtTHB(r.monthlyNet)}</span>
+        </div>
+      ` : ''}
+      ${r.simplePaybackMonths != null ? `
+        <div class="explain-box" style="margin-top:12px">
+          <div class="title">จุดคุ้มทุน = ${isLoan ? 'ยอดผ่อนรวมทั้งหมด' : 'เงินลงทุน'} ÷ ผลประโยชน์รวมต่อเดือน</div>
+          <div style="font-size:13px;margin-top:6px">
+            ฿${fmtTHB(isLoan && r.loan ? r.loan.totalPay : r.investment)} ÷ ฿${fmtTHB(r.monthlyBenefit)}
+            = <strong>${fmtPaybackMonths(r.simplePaybackMonths)}</strong>
+          </div>
+          <div style="font-size:11px;margin-top:8px;opacity:.9;line-height:1.5">
+            ${isTOU
+              ? 'รวมเงินที่ประหยัดจาก TOU (ค่าไฟเหลือจ่ายน้อยกว่าค่าไฟปกติ) เข้าไปด้วย → คืนทุนเร็วขึ้น'
+              : 'ลองเปลี่ยนเป็น TOU + เพิ่ม self-consumption เพื่อให้คืนทุนเร็วขึ้น'}
+          </div>
+        </div>
+      ` : `
+        <div class="warn-box" style="margin-top:12px">
+          ⚠️ ผลประโยชน์รวมเป็นศูนย์หรือติดลบ — ไม่สามารถคำนวณจุดคุ้มทุนได้
+        </div>
+      `}
+    </div>
+
+    <!-- หลังคืนทุน -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.04));border-color:var(--eco-600)">
+      <h3>✅ หลังคืนทุนแล้วได้อะไร</h3>
+      <div style="font-size:13px;line-height:1.7;color:var(--text-secondary)">
+        ${isLoan ? `
+          <p style="margin-bottom:8px">
+            <strong>ช่วงผ่อนธนาคาร (ปี 1–${Math.ceil(i.loanMonths/12)})</strong><br>
+            รายรับจากโซล่า − ค่างวด = กำไรสุทธิต่อเดือน (ใช้คำนวณจุดคุ้มทุน)
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>หลังหมดผ่อนธนาคาร</strong><br>
+            ไม่มีค่างวดแล้ว → รายรับจากโซล่าทั้งหมดกลายเป็น
+            <span style="color:var(--eco-600);font-weight:600">กำไรเต็มจำนวน</span>
+            (ประมาณ ฿${fmtTHB(r.monthlyRevenue)}/เดือน หรือ ~฿${fmtTHB(r.monthlyRevenue*12)}/ปี)
+          </p>
+        ` : `
+          <p style="margin-bottom:8px">
+            <strong>จ่ายเงินสด</strong><br>
+            รายรับจากโซล่าทั้งหมดเป็นกำไรสุทธิ (ไม่มีค่างวด)
+            ประมาณ ฿${fmtTHB(r.monthlyRevenue)}/เดือน หรือ ~฿${fmtTHB(r.monthlyRevenue*12)}/ปี
+          </p>
+        `}
+        <p>
+          <strong>หลังจุดคุ้มทุน</strong><br>
+          เงินลงทุนคืนครบแล้ว → รายได้ที่เหลือตลอดอายุการใช้งาน (ถึงปีที่ ${i.projectYears})
+          เป็นกำไรสุทธิทั้งหมด
+        </p>
+      </div>
+      <div class="breakdown-row total" style="margin-top:12px">
+        <span>กำไรช่วงปี 8–20 (หมดผ่อนแล้ว)</span>
+        <span class="val eco">฿${fmtTHB(r.simplePhase2)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">กำไรรวม 25 ปี</span>
+        <span class="val eco">฿${fmtTHB(r.simpleTotal25)}</span>
+      </div>
+    </div>
+
+    <!-- ตารางรายรับ-รายจ่ายรายเดือน -->
+    ${(() => {
+      const monthsToShow = Math.min(
+        r.simplePaybackMonths != null ? Math.ceil(r.simplePaybackMonths) + 3 : 24,
+        isLoan ? i.loanMonths : 36,
+        84
+      );
+      const rev = r.monthlyBenefit;
+      const loanPmt = isLoan ? r.monthlyLoan : 0;
+      const net = rev - loanPmt;
+      let cum = -r.investment;
+      const rows = [];
+      for (let m = 1; m <= monthsToShow; m++) {
+        const thisLoan = (isLoan && m <= i.loanMonths) ? loanPmt : 0;
+        const thisNet = rev - thisLoan;
+        cum += thisNet;
+        rows.push({ m, rev, loan: thisLoan, net: thisNet, cum });
+      }
+      return `
+      <div class="section">
+        <h3>📋 ตารางรายรับ-รายจ่ายรายเดือน</h3>
+        <div class="field-hint" style="margin-bottom:12px">
+          รายรับคงที่ตามปีแรก · ค่างวดมีเฉพาะช่วงผ่อน · สะสมเริ่มจาก −เงินลงทุน
+        </div>
+        <div class="table-wrap" style="max-height:420px">
+          <table class="year-table">
+            <thead>
+              <tr>
+                <th>เดือน</th>
+                <th>รายรับ</th>
+                <th>ค่างวด</th>
+                <th>สุทธิ</th>
+                <th>สะสม</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>เริ่มต้น</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td style="color:var(--danger-500)">−${fmtTHB(r.investment)}</td>
+              </tr>
+              ${rows.map(row => `
+                <tr class="${row.cum >= 0 ? 'positive' : ''}">
+                  <td>${row.m}${r.simplePaybackMonths != null && row.m === Math.ceil(r.simplePaybackMonths) ? ' ✓' : ''}${isLoan && row.m === i.loanMonths ? ' 🏦' : ''}</td>
+                  <td>${fmtTHB(row.rev)}</td>
+                  <td>${row.loan ? '−' + fmtTHB(row.loan) : '—'}</td>
+                  <td style="color:${row.net >= 0 ? 'var(--eco-600)' : 'var(--danger-500)'}">${fmtTHB(row.net)}</td>
+                  <td style="color:${row.cum >= 0 ? 'var(--eco-600)' : 'var(--danger-500)'}">${fmtTHB(row.cum)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="explain-box" style="margin-top:12px">
+          <div style="font-size:12px;line-height:1.6">
+            • <strong>รายรับ</strong> = ผลประโยชน์รวม (โซล่า${isTOU ? ' + ประหยัด TOU' : ''}) = ฿${fmtTHB(rev)}/เดือน<br>
+            • <strong>ค่างวด</strong> = ฿${fmtTHB(loanPmt)}/เดือน (มีถึงเดือนที่ ${isLoan ? i.loanMonths : 0})<br>
+            • <strong>สุทธิ</strong> = รายรับ − ค่างวด = ฿${fmtTHB(net)}/เดือน<br>
+            • เครื่องหมาย ✓ = เดือนที่ถึงจุดคุ้มทุน · 🏦 = เดือนสุดท้ายของสัญญาผ่อน
+          </div>
+        </div>
+      </div>`;
+    })()}
+
+    <!-- Production Summary -->
+    <div class="section production-section">
+      <h3>⚡ สรุปการผลิตไฟฟ้า</h3>
+      <div class="breakdown-row">
+        <span class="lbl">ต่อวัน</span>
+        <span class="val eco">${fmtDaily(daily)} หน่วย</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">ต่อเดือน (เฉลี่ย)</span>
+        <span class="val eco">${fmtMonthly(monthly)} หน่วย</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">ต่อปี (${DAYS_PER_YEAR} วัน)</span>
+        <span class="val eco">${fmtTHB(yearly)} หน่วย</span>
+      </div>
+      <div class="breakdown-row total">
+        <span>รวม ${i.projectYears} ปี</span>
+        <span class="val eco">${fmtTHB(r.totalProduction)} หน่วย</span>
+      </div>
+      <div class="explain-box" style="margin-top:12px">
+        <div>📅 ใช้ <strong>${DAYS_PER_YEAR} วัน/ปี</strong> (มาตรฐานสากล)</div>
+        <div style="margin-top:4px;font-size:11px">
+          = ${fmtDaily(daily)} × ${DAYS_PER_YEAR} = ${fmtTHB(yearly)} หน่วย/ปี<br>
+          เดือนเฉลี่ย = ${fmtTHB(yearly)} ÷ ${MONTHS_PER_YEAR} = ${fmtMonthly(monthly)} หน่วย
+        </div>
+      </div>
+    </div>
+
+    <!-- Tariff Summary -->
+    <div class="section tariff-section">
+      <h3>⚡ สรุปค่าไฟที่ใช้คำนวณ</h3>
+      ${!isTOU ? `
+        <div class="breakdown-row">
+          <span class="lbl">ประเภท</span>
+          <span class="val">ค่าไฟปกติ (อัตราเดียว)</span>
+        </div>
+        <div class="breakdown-row total">
+          <span>ค่าไฟต่อหน่วย</span>
+          <span class="val">฿${fmtNum(r.effectiveTariff, 2)}/kWh</span>
+        </div>
+      ` : `
+        <div class="breakdown-row">
+          <span class="lbl">ประเภท</span>
+          <span class="val">TOU (ตามช่วงเวลา)</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">On-Peak</span>
+          <span class="val">฿${fmtNum(i.touOnPeak, 2)}/kWh</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">Off-Peak</span>
+          <span class="val">฿${fmtNum(i.touOffPeak, 2)}/kWh</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">สัดส่วน On-Peak</span>
+          <span class="val">${Math.round(i.touOnPeakPct * 100)}%</span>
+        </div>
+        <div class="breakdown-row total">
+          <span>Blended rate</span>
+          <span class="val">฿${fmtNum(r.effectiveTariff, 2)}/kWh</span>
+        </div>
+      `}
+    </div>
+
+    <!-- สรุป 3 ระยะ (cash-flow) -->
+    <div class="section" style="background:linear-gradient(135deg,rgba(255,201,60,.08),rgba(255,159,28,.04));border-color:var(--sun-500)">
+      <h3>📆 สรุปผลตอบแทน 3 ระยะ (รวม 25 ปี)</h3>
+      <div class="field-hint" style="margin-bottom:12px">
+        ผลประโยชน์ ฿${fmtTHB(r.monthlyBenefit)}/เดือน (≈ ฿${fmtTHB(r.annualBenefit)}/ปี)
+        · ตัวเลขแต่ละช่วง = กระแสเงินสด (หักค่างวด/เงินลงทุนเริ่มต้นแล้ว)
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl"><strong>ระยะที่ 1</strong> ปี 1–7 (${isLoan ? 'หลังหักค่างวด' : 'หลังหักเงินลงทุน'})</span>
+        <span class="val ${r.simplePhase1 >= 0 ? 'eco' : 'danger'}">฿${fmtTHB(r.simplePhase1)}</span>
+      </div>
+      <div class="breakdown-row sub">
+        <span class="lbl">├ ผลประโยชน์ 7 ปี</span>
+        <span class="val">฿${fmtTHB(r.annualBenefit * 7)}</span>
+      </div>
+      <div class="breakdown-row sub">
+        <span class="lbl">└ หัก${isLoan ? 'ค่างวด 7 ปี' : 'เงินลงทุน'}</span>
+        <span class="val">−฿${fmtTHB(isLoan ? r.annualBenefit * 7 - r.simplePhase1 : r.investment)}</span>
+      </div>
+      <div class="breakdown-row" style="margin-top:8px">
+        <span class="lbl"><strong>ระยะที่ 2</strong> ปี 8–20 (หมดผ่อน · กระแสเงินสดเต็ม)</span>
+        <span class="val ${r.simplePhase2 >= 0 ? 'eco' : 'danger'}">฿${fmtTHB(r.simplePhase2)}</span>
+      </div>
+      <div class="breakdown-row" style="margin-top:8px">
+        <span class="lbl"><strong>ระยะที่ 3</strong> ปี 21–25</span>
+        <span class="val ${r.simplePhase3 >= 0 ? 'eco' : 'danger'}">฿${fmtTHB(r.simplePhase3)}</span>
+      </div>
+      <div class="breakdown-row total">
+        <span>กำไรสุทธิ 25 ปี (ผลประโยชน์ − เงินจ่ายจริงทั้งหมด)</span>
+        <span class="val ${r.simpleTotal25 >= 0 ? 'eco' : 'danger'}">฿${fmtTHB(r.simpleTotal25)}</span>
+      </div>
+      <div class="explain-box" style="margin-top:12px">
+        <div style="font-size:12px;line-height:1.6">
+          • <strong>กำไร</strong> = ผลประโยชน์รวม ฿${fmtTHB(r.totalBenefit25)} − เงินจ่ายจริง ฿${fmtTHB(r.totalCashOut)}
+          = <strong>฿${fmtTHB(r.simpleTotal25)}</strong><br>
+          • ผลรวม 3 ระยะ = กำไร 25 ปี (กระทบกันครบแล้ว)<br>
+          • ${isLoan ? 'ค่างวดรวม' : 'เงินลงทุน'} = ฿${fmtTHB(r.totalCashOut)}${isLoan ? ' (รวมดอกเบี้ย ฿'+fmtTHB(r.loan.totalInterest)+')' : ''}
+        </div>
+      </div>
+    </div>
+
+    <!-- Warranty -->
+    <div class="section warranty-section">
+      <h3>🛡 สรุปการรับประกัน</h3>
+      <div class="breakdown-row">
+        <span class="lbl"><span class="warranty-badge eco">🛠 งานติดตั้ง</span></span>
+        <span class="val">${r.installationWarrantyYears} ปี
+          <span class="warranty-badge eco" style="margin-left:6px">ถึงปี ${r.installationWarrantyYears}</span>
+        </span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl"><span class="warranty-badge sun">🛡 สินค้า/แผง</span></span>
+        <span class="val">${r.productWarrantyYears} ปี
+          <span class="warranty-badge sun" style="margin-left:6px">ถึงปี ${r.productWarrantyYears}</span>
+        </span>
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl"><span class="warranty-badge">✅ ปลอดค่าซ่อมรวม</span></span>
+        <span class="val">${r.warrantyEnd} ปี</span>
+      </div>
+      <div class="breakdown-row total">
+        <span>เริ่มจ่ายซ่อมบำรุง</span>
+        <span class="val danger">ปีที่ ${r.maintenanceStartYear}</span>
+      </div>
+      ${r.maintenanceStartYear > i.projectYears ? `
+        <div class="warn-box" style="margin-top:12px">
+          ✅ ระยะโครงการสั้นกว่าประกัน — ไม่ต้องจ่ายค่าซ่อมเลยตลอดโครงการ
+        </div>
+      ` : ''}
+    </div>
+
+    ${isLoan && r.loan ? `
+      <div class="section" style="background:linear-gradient(135deg,rgba(255,201,60,.08),rgba(255,159,28,.04));border-color:var(--sun-500)">
+        <h3>🏦 สรุปเงินกู้</h3>
+        <div class="breakdown-row">
+          <span class="lbl">ยอดกู้</span><span class="val">฿${fmtTHB(r.investment)}</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">อัตราดอกเบี้ย</span>
+          <span class="val">${fmtNum(i.interestRate, 2)}% (${i.interestType === 'flat' ? 'คงที่' : 'ลดต้นลดดอก'})</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">ระยะเวลาผ่อน</span><span class="val">${fmtLoanTerm(i.loanMonths)}</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">ค่างวด/เดือน</span>
+          <span class="val" style="color:var(--sun-700)">฿${fmtNum(r.loan.monthly, 0)}</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="lbl">ดอกเบี้ยรวม</span><span class="val danger">฿${fmtTHB(r.loan.totalInterest)}</span>
+        </div>
+        <div class="breakdown-row total">
+          <span>ยอดผ่อนรวม</span><span>฿${fmtTHB(r.loan.totalPay)}</span>
+        </div>
+      </div>
+    ` : ''}
+
+    ${renderChart()}
+
+    <div class="tiles">
+      <div class="tile"><div class="tile-label">ผลิต/วัน</div>
+        <div class="tile-value">${fmtDaily(daily)} หน่วย</div></div>
+      <div class="tile"><div class="tile-label">ผลิต/เดือน (เฉลี่ย)</div>
+        <div class="tile-value">${fmtMonthly(monthly)} หน่วย</div></div>
+      <div class="tile"><div class="tile-label">ผลิต/ปี</div>
+        <div class="tile-value">${fmtTHB(yearly)} หน่วย</div></div>
+      <div class="tile"><div class="tile-label">ROI</div>
+        <div class="tile-value ${roiClass}">${fmtNum(r.roi, 0)}%</div></div>
+    </div>
+
+    <!-- สรุปการเงิน -->
+    <div class="section">
+      <h3>💰 สรุปการเงิน (ตลอด 25 ปี)</h3>
+      <div class="field-hint" style="margin-bottom:12px">
+        คำนวณจากกระแสเงินสดจริง: ผลประโยชน์รวม − เงินที่จ่ายออกทั้งหมด
+      </div>
+      <div class="breakdown-row">
+        <span class="lbl">ผลประโยชน์รวม 25 ปี</span>
+        <span class="val eco">+฿${fmtTHB(r.totalBenefit25)}</span>
+      </div>
+      <div class="breakdown-row sub">
+        <span class="lbl">├ ฿${fmtTHB(r.monthlyBenefit)}/เดือน × 12 × 25</span>
+        <span class="val">฿${fmtTHB(r.totalBenefit25)}</span>
+      </div>
+      ${r.loan ? `
+        <div class="breakdown-row" style="margin-top:8px">
+          <span class="lbl">ยอดผ่อนรวม (เงินต้น + ดอกเบี้ย)</span>
+          <span class="val danger">−฿${fmtTHB(r.loan.totalPay)}</span>
+        </div>
+        <div class="breakdown-row sub">
+          <span class="lbl">├ เงินต้น (= เงินลงทุนสุทธิ)</span>
+          <span class="val">฿${fmtTHB(r.investment)}</span>
+        </div>
+        <div class="breakdown-row sub">
+          <span class="lbl">└ ดอกเบี้ย</span>
+          <span class="val">฿${fmtTHB(r.loan.totalInterest)}</span>
+        </div>
+      ` : `
+        <div class="breakdown-row" style="margin-top:8px">
+          <span class="lbl">เงินลงทุนสุทธิ</span>
+          <span class="val danger">−฿${fmtTHB(r.investment)}</span>
+        </div>
+      `}
+      <div class="breakdown-row total">
+        <span>กำไรสุทธิ 25 ปี (กระแสเงินสดจริง)</span>
+        <span class="val ${roiClass}">฿${fmtTHB(profit25)}</span>
+      </div>
+      <div class="explain-box" style="margin-top:12px">
+        <div style="font-size:12px;line-height:1.6">
+          ผลประโยชน์รวม ฿${fmtTHB(r.totalBenefit25)} − เงินจ่ายจริง ฿${fmtTHB(r.totalCashOut)}
+          = <strong>฿${fmtTHB(profit25)}</strong>
+          <br>ตรงกับกำไรในบอร์ดสรุปจุดคุ้มทุน และผลรวม 3 ระยะ
+        </div>
+      </div>
+    </div>
+
+    <div class="eco-callout">
+      <span class="emoji">🌳</span>
+      <div>
+        <div class="text-label">เทียบเท่าปลูกต้นไม้</div>
+        <div class="text-value">${fmtTHB(r.treesEquivalent)} ต้น · CO₂ ${fmtTHB(r.co2SavedKg/1000)} ตัน</div>
+      </div>
+    </div>
+
+    <details class="details">
+      <summary>ดูรายละเอียดรายปี (${r.rows.length} ปี)</summary>
+      <div class="table-wrap">
+        <table class="year-table">
+          <thead><tr>
+            <th>ปี</th><th>ผลิต</th><th>ประหยัด</th><th>ขาย</th>
+            <th>ซ่อม</th><th>ผ่อน</th><th>สุทธิ</th><th>สะสม</th>
+          </tr></thead>
+          <tbody>
+            ${r.rows.map(row => `
+              <tr class="${row.cumulative >= 0 ? 'positive' : ''}">
+                <td>${row.year}${row.year === r.maintenanceStartYear ? ' 🛠' : ''}${row.year === r.installationWarrantyYears ? ' 🛡' : ''}</td>
+                <td>${fmtTHB(row.production)}</td>
+                <td>${fmtTHB(row.savings)}</td>
+                <td>${fmtTHB(row.exportRevenue)}</td>
+                <td>${row.maintenance ? '-' + fmtTHB(row.maintenance) : '—'}</td>
+                <td>${row.loanPayment ? '-' + fmtTHB(row.loanPayment) : '—'}</td>
+                <td>${fmtTHB(row.netCashFlow)}</td>
+                <td>${fmtTHB(row.cumulative)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="disclaimer" style="margin-top:24px">
+      ผลคำนวณเป็นการประมาณการ ไม่ใช่การรับประกัน<br>
+      ขึ้นกับค่าไฟจริง ปริมาณแสง และนโยบายพื้นที่
+    </p>
+
+    <div class="action-grid">
+      <button class="btn-secondary" data-action="compare">📊 เปรียบเทียบ</button>
+      <button class="btn-secondary" data-action="save">💾 บันทึก</button>
+      <button class="btn-secondary" data-action="edit">✏️ แก้ไข</button>
+      <button class="btn-primary" data-action="print">🖨 แชร์</button>
+    </div>
+  </div>`;
+}
+
+function renderChart() {
+  const r = state.result;
+  const i = state.input;
+  const loanEndYear = i.paymentType === 'loan' ? Math.ceil(i.loanMonths / 12) : 0;
+  const showYears = Math.min(i.projectYears, 25);
+  const rows = r.rows.filter(row => row.year <= showYears);
+
+  // Bar chart
+  const barW = 400, barH = 200;
+  const barPad = { l: 36, r: 12, t: 20, b: 28 };
+  const barInnerW = barW - barPad.l - barPad.r;
+  const barInnerH = barH - barPad.t - barPad.b;
+  const maxNet = Math.max(...rows.map(d => d.netCashFlow), 1);
+  const barWidth = Math.max(4, (barInnerW / rows.length) * 0.7);
+  const barGap = barInnerW / rows.length;
+
+  const bars = rows.map((row, idx) => {
+    const h = (Math.max(0, row.netCashFlow) / maxNet) * barInnerH;
+    const x = barPad.l + idx * barGap + (barGap - barWidth) / 2;
+    const y = barPad.t + barInnerH - h;
+    const isLoanPeriod = loanEndYear > 0 && row.year <= loanEndYear;
+    const color = isLoanPeriod ? '#F59E0B' : '#10B981';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${h.toFixed(1)}"
+      fill="${color}" rx="2"/>`;
+  }).join('');
+
+  let loanLine = '';
+  if (loanEndYear > 0 && loanEndYear < showYears) {
+    const lx = barPad.l + (loanEndYear - 0.5) * barGap + barGap / 2;
+    loanLine = `
+      <line x1="${lx.toFixed(1)}" y1="${barPad.t}" x2="${lx.toFixed(1)}" y2="${barPad.t + barInnerH}"
+        stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="${lx.toFixed(1)}" y="${barPad.t - 4}" font-size="9" fill="#EF4444" text-anchor="middle">หมดผ่อนปี ${loanEndYear}</text>`;
+  }
+
+  const barTicks = [1, 5, 10, 15, 20, 25].filter(t => t <= showYears);
+  const barLabels = barTicks.map(t => {
+    const x = barPad.l + (t - 0.5) * barGap;
+    return `<text x="${x.toFixed(1)}" y="${barH - 8}" font-size="9" fill="#98A1AE" text-anchor="middle">${t}</text>`;
+  }).join('');
+
+  // Cumulative
+  const cumData = [{ year: 0, cumulative: -r.investment }, ...rows];
+  const cumW = 400, cumH = 200;
+  const cumPad = { l: 8, r: 8, t: 20, b: 28 };
+  const cumInnerW = cumW - cumPad.l - cumPad.r;
+  const cumInnerH = cumH - cumPad.t - cumPad.b;
+  const ys = cumData.map(d => d.cumulative);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rangeY = maxY - minY || 1;
+  const xOf = idx => cumPad.l + (idx / (cumData.length - 1)) * cumInnerW;
+  const yOf = v => cumPad.t + cumInnerH - ((v - minY) / rangeY) * cumInnerH;
+  const zeroY = Math.max(cumPad.t, Math.min(cumH - cumPad.b, yOf(0)));
+  const linePath = cumData.map((d, idx) =>
+    `${idx === 0 ? 'M' : 'L'} ${xOf(idx).toFixed(1)} ${yOf(d.cumulative).toFixed(1)}`
+  ).join(' ');
+  const areaPath = linePath + ` L ${xOf(cumData.length - 1).toFixed(1)} ${cumH - cumPad.b} L ${cumPad.l} ${cumH - cumPad.b} Z`;
+
+  let paybackDot = '', paybackLabel = '';
+  if (r.paybackYears !== null && r.paybackYears <= showYears) {
+    const px = cumPad.l + (r.paybackYears / showYears) * cumInnerW;
+    paybackDot = `<circle cx="${px.toFixed(1)}" cy="${zeroY.toFixed(1)}" r="5" fill="#10B981" stroke="#fff" stroke-width="2"/>`;
+    paybackLabel = `<text x="${px.toFixed(1)}" y="${zeroY - 10}" font-size="9" fill="#10B981" text-anchor="middle">จุดคุ้มทุน ~ปี ${fmtNum(r.paybackYears,1)}</text>`;
+  }
+
+  let cumLoanLine = '';
+  if (loanEndYear > 0 && loanEndYear < showYears) {
+    const lx = cumPad.l + (loanEndYear / showYears) * cumInnerW;
+    cumLoanLine = `<line x1="${lx.toFixed(1)}" y1="${cumPad.t}" x2="${lx.toFixed(1)}" y2="${cumH - cumPad.b}"
+      stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  }
+
+  const cumTicks = [0, 5, 10, 15, 20, 25].filter(t => t <= showYears);
+  const cumLabels = cumTicks.map(t => {
+    const idx = (t / showYears) * (cumData.length - 1);
+    return `<text x="${xOf(idx).toFixed(1)}" y="${cumH - 8}" font-size="9" fill="#98A1AE" text-anchor="middle">${t}</text>`;
+  }).join('');
+
+  const p1 = r.simplePhase1;
+  const p2 = r.simplePhase2;
+  const total20 = p1 + p2;
+  const pct1 = total20 !== 0 ? (p1 / total20 * 100) : 0;
+  const pct2 = total20 !== 0 ? (p2 / total20 * 100) : 0;
+  const isLoan = i.paymentType === 'loan';
+
+  return `
+  <!-- สัดส่วนกำไร 20 ปี -->
+  <div class="section" style="background:linear-gradient(135deg,rgba(255,201,60,.08),rgba(16,185,129,.06));border-color:var(--sun-500)">
+    <h3>🥧 สัดส่วนกำไรสุทธิตลอด 20 ปี</h3>
+    <div class="breakdown-row">
+      <span class="lbl"><span style="display:inline-block;width:12px;height:12px;background:#F59E0B;border-radius:3px;margin-right:6px"></span>ปี 1–7 (${isLoan ? 'ขณะผ่อนธนาคาร' : 'เริ่มต้น'})</span>
+      <span class="val">฿${fmtTHB(p1)} <span style="color:var(--text-muted);font-weight:400">(${fmtNum(pct1,1)}%)</span></span>
+    </div>
+    <div class="breakdown-row">
+      <span class="lbl"><span style="display:inline-block;width:12px;height:12px;background:#10B981;border-radius:3px;margin-right:6px"></span>ปี 8–20 (${isLoan ? 'หมดผ่อนแล้ว' : 'ดำเนินการปกติ'})</span>
+      <span class="val eco">฿${fmtTHB(p2)} <span style="color:var(--text-muted);font-weight:400">(${fmtNum(pct2,1)}%)</span></span>
+    </div>
+    <div class="breakdown-row total">
+      <span>รวม 20 ปี</span>
+      <span class="val">฿${fmtTHB(total20)}</span>
+    </div>
+    <div class="explain-box" style="margin-top:12px">
+      <div style="font-size:12px;line-height:1.6">
+        • <strong>สีส้ม</strong> = กระแสเงินสดช่วงปี 1–7 ≈ ฿${fmtTHB(p1 / 7)}/ปี<br>
+        • <strong>สีเขียว</strong> = กระแสเงินสดช่วงปี 8–20 ≈ ฿${fmtTHB(p2 / 13)}/ปี<br>
+        → หลังหมดผ่อน กำไรพุ่งขึ้น
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <h3>กำไรสุทธิรายปี</h3>
+      <span>${showYears} ปี</span>
+    </div>
+    <svg class="chart-svg" viewBox="0 0 ${barW} ${barH}" preserveAspectRatio="xMidYMid meet">
+      ${bars}
+      ${loanLine}
+      ${barLabels}
+      <text x="4" y="${barPad.t + 8}" font-size="9" fill="#98A1AE">บาท</text>
+    </svg>
+    <div class="chart-caption">
+      ${loanEndYear > 0
+        ? `<span style="color:#F59E0B">■ ปี 1–${loanEndYear} (ขณะผ่อน)</span>
+           · <span style="color:#10B981">■ ปี ${loanEndYear + 1}+ (หมดผ่อน)</span>
+           · <span style="color:#EF4444">-- หมดผ่อนธนาคาร</span>`
+        : `<span style="color:#10B981">■ ทั้งหมด (จ่ายเงินสด ไม่มีค่างวด)</span>`}
+    </div>
+  </div>
+
+  <!-- Cumulative -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <h3>กำไรสะสม</h3>
+      <span>${showYears} ปี</span>
+    </div>
+    <svg class="chart-svg" viewBox="0 0 ${cumW} ${cumH}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="cashGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${cumPad.l}" y1="${zeroY.toFixed(1)}" x2="${cumW - cumPad.r}" y2="${zeroY.toFixed(1)}"
+        stroke="#98A1AE" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>
+      <path d="${areaPath}" fill="url(#cashGrad)"/>
+      <path d="${linePath}" fill="none" stroke="#3B82F6" stroke-width="2.5"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      ${cumLoanLine}
+      ${paybackDot}
+      ${paybackLabel}
+      ${cumLabels}
+    </svg>
+    <div class="chart-caption">
+      เส้นน้ำเงิน = กำไรสะสม · จุดเขียว = จุดคุ้มทุน
+      ${loanEndYear ? ' · เส้นแดงประ = หมดผ่อนธนาคาร' : ''}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  COMPARE
+// ═══════════════════════════════════════════════
+function renderCompare() {
+  const list = state.scenarios;
+  let content;
+  if (list.length === 0) {
+    content = `<div class="empty-state">
+      <span class="emoji">📊</span>
+      <h3>ยังไม่มีสถานการณ์เปรียบเทียบ</h3>
+      <p>กดปุ่มด้านบนเพื่อเพิ่มขนาดระบบ<br>หรือกลับไปหน้าผลลัพธ์แล้วกด «เปรียบเทียบ»</p>
+    </div>`;
+  } else {
+    content = `<div class="scenario-grid">${list.map(s => renderScenarioCard(s)).join('')}</div>
+      ${renderCompareBars(list)}
+      ${renderCompareProfitBars(list)}`;
+  }
+  return `
+  ${renderTopNav(true)}
+  <div class="screen">
+    <div class="results-head">
+      <h2>เปรียบเทียบสถานการณ์</h2>
+      <span class="count-badge">${list.length}</span>
+    </div>
+    <div class="preset-row">
+      <span>เพิ่มขนาด:</span>
+      ${[3, 5, 7, 10].map(k => `<button class="chip-mini" data-preset-kwp="${k}">${k} kWp</button>`).join('')}
+    </div>
+    <div class="field-hint" style="margin-bottom:16px">
+      ใช้สูตรเดียวกับหน้าผลลัพธ์: จุดคุ้มทุนแบบรายเดือน · กำไร 25 ปี = ผลประโยชน์รวม − เงินจ่ายจริง
+    </div>
+    ${content}
+  </div>`;
+}
+
+function renderScenarioCard(s) {
+  const r = s.result;
+  const pbMonths = r.simplePaybackMonths;
+  const pbLabel = pbMonths != null ? fmtPaybackMonths(pbMonths) : 'ไม่คืนทุน';
+  const profit25 = r.simpleTotal25;
+  const roiClass = profit25 >= 0 ? 'eco' : 'danger';
+  const daily = r.dailyProd != null ? r.dailyProd : getDailyProduction(s.input);
+  const tariffLabel = s.input.tariffType === 'tou' ? 'TOU' : 'ปกติ';
+  const selfPct = Math.round((s.input.selfConsumptionRate || 0) * 100);
+  return `
+  <div class="scenario-card">
+    <div class="scenario-head">
+      <span class="scenario-name">${esc(s.name)}</span>
+      <button class="scenario-del" data-delete-scenario="${s.id}" aria-label="ลบ">✕</button>
+    </div>
+    <div class="scenario-big ${pbMonths == null ? 'no-payback' : ''}">
+      ${pbLabel}
+    </div>
+    <div class="scenario-sub">จุดคุ้มทุน</div>
+    <div class="scenario-metrics">
+      <div class="scenario-metric">
+        <span class="lbl">ขนาด</span><span class="val">${s.input.systemKwp} kWp</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">ผลิต/วัน</span><span class="val">${fmtDaily(daily)} หน่วย</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">ใช้เอง</span><span class="val">${selfPct}%</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">ค่าไฟ</span><span class="val">${tariffLabel}</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">ผลประโยชน์/เดือน</span>
+        <span class="val eco">฿${fmtTHB(r.monthlyBenefit || 0)}</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">กำไร 25 ปี</span>
+        <span class="val ${roiClass}">฿${fmtTHB(profit25)}</span>
+      </div>
+      <div class="scenario-metric">
+        <span class="lbl">ROI</span>
+        <span class="val ${roiClass}">${fmtNum(r.roi, 0)}%</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCompareBars(list) {
+  const vals = list.map(s => s.result.simplePaybackMonths).filter(y => y != null && y > 0);
+  const maxPb = vals.length ? Math.max(...vals) : 1;
+  const bars = list.map(s => {
+    const y = s.result.simplePaybackMonths;
+    const isNull = y == null || y <= 0;
+    const width = isNull ? 100 : Math.max(12, (y / maxPb) * 100);
+    const cls = isNull ? 'danger' : (y <= 60 ? 'eco' : '');
+    const label = isNull ? 'ไม่คืนทุน' : fmtPaybackMonths(y);
+    return `
+      <div class="bar-row">
+        <span class="bar-label">${esc(s.name)}</span>
+        <div class="bar-track">
+          <div class="bar-fill ${cls}" style="width:${width}%">
+            <span class="bar-value">${label}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+  <div class="compare-section">
+    <h3>จุดคุ้มทุน (สั้นกว่า = ดีกว่า)</h3>
+    ${bars}
+  </div>`;
+}
+
+function renderCompareProfitBars(list) {
+  const vals = list.map(s => Math.max(0, s.result.simpleTotal25 || 0));
+  const maxP = vals.length ? Math.max(...vals, 1) : 1;
+  const bars = list.map(s => {
+    const p = s.result.simpleTotal25 || 0;
+    const width = Math.max(8, (Math.max(0, p) / maxP) * 100);
+    const cls = p >= 0 ? 'eco' : 'danger';
+    return `
+      <div class="bar-row">
+        <span class="bar-label">${esc(s.name)}</span>
+        <div class="bar-track">
+          <div class="bar-fill ${cls}" style="width:${width}%">
+            <span class="bar-value">฿${fmtTHB(p)}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+  <div class="compare-section" style="margin-top:16px">
+    <h3>กำไรสุทธิ 25 ปี (ผลประโยชน์ − เงินจ่ายจริง)</h3>
+    ${bars}
+  </div>`;
+}
+
+function addPresetScenario(kwp) {
+  if (state.scenarios.length >= 4) { showToast('เพิ่มได้สูงสุด 4 สถานการณ์'); return; }
+  const dup = state.scenarios.find(s => Math.abs(s.input.systemKwp - kwp) < 0.1);
+  if (dup) { showToast(`มี ${kwp} kWp อยู่แล้ว`); return; }
+  const base = state.input;
+  const costPerKwp = base.initialCost / Math.max(base.systemKwp, 0.1);
+  const newInput = {
+    ...base,
+    systemKwp: kwp,
+    initialCost: Math.round((costPerKwp * kwp) / 1000) * 1000,
+  };
+  const result = calculateSolar(newInput);
+  state.scenarios.push({
+    id: Date.now() + Math.random(),
+    name: `${kwp} kWp`,
+    input: newInput,
+    result,
+  });
+  saveScenarios(state.scenarios);
+  render();
+}
+function deleteScenario(id) {
+  state.scenarios = state.scenarios.filter(s => s.id !== id);
+  saveScenarios(state.scenarios);
+  render();
+  showToast('ลบสถานการณ์แล้ว');
+}
+
+// ═══════════════════════════════════════════════
+//  PROJECTS
+// ═══════════════════════════════════════════════
+function renderProjects() {
+  const projects = loadProjects();
+  let content;
+  if (projects.length === 0) {
+    content = `<div class="empty-state">
+      <span class="emoji">📁</span>
+      <h3>ยังไม่มีโปรเจกต์ที่บันทึก</h3>
+      <p>คำนวณเสร็จแล้วกด "บันทึก" ที่หน้าผลลัพธ์<br>เพื่อเก็บโปรเจกต์ไว้ดูภายหลัง</p>
+    </div>`;
+  } else {
+    content = `<div class="project-list">
+      ${projects.map(p => `
+        <div class="project-card">
+          <div class="project-body" data-load-project="${p.id}">
+            <div class="project-name">${esc(p.name)}</div>
+            <div class="project-meta">
+              ${p.input.systemKwp} kWp · ฿${fmtTHB(p.input.initialCost)}
+              · ${p.input.paymentType === 'loan' ? 'เงินกู้' : 'เงินสด'}
+              · ${p.input.tariffType === 'tou' ? 'TOU' : 'ปกติ'}
+              · ${formatDate(p.createdAt)}
+            </div>
+          </div>
+          <button class="project-del" data-delete-project="${p.id}" aria-label="ลบ">🗑</button>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+  return `
+  ${renderTopNav(true)}
+  <div class="screen">
+    <div class="results-head">
+      <h2>โปรเจกต์ที่บันทึก</h2>
+      <span class="count-badge">${projects.length}</span>
+    </div>
+    ${content}
+  </div>`;
+}
+function formatDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  } catch { return ''; }
+}
+
+// ═══════════════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════════════
+function bindEvents() {
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', () => {
+      const a = el.dataset.action;
+      if (a === 'toggle-theme') { toggleTheme(); return; }
+      if (a === 'home') { state.screen = 'welcome'; render(); window.scrollTo(0, 0); return; }
+      if (a === 'start') { state.screen = 'setup'; state.step = 0; render(); return; }
+      if (a === 'copy-source') {
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        navigator.clipboard.writeText(html).then(() => {
+          showToast('คัดลอกโค้ด HTML ทั้งไฟล์แล้ว ✓');
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = html;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          showToast('คัดลอกโค้ด HTML ทั้งไฟล์แล้ว ✓');
+        });
+        return;
+      }
+      if (a === 'back') {
+        if (state.step === 0) state.screen = 'welcome';
+        else state.step--;
+        render(); return;
+      }
+      if (a === 'next') {
+        if (state.step < 2) { state.step++; render(); }
+        else {
+          state.result = calculateSolar(state.input);
+          state.screen = 'results'; render();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        return;
+      }
+      if (a === 'edit') { state.screen = 'setup'; state.step = 0; render(); return; }
+      if (a === 'print') { window.print(); return; }
+      if (a === 'compare') {
+        const freshResult = calculateSolar(state.input);
+        state.result = freshResult;
+        const tariffTag = state.input.tariffType === 'tou' ? ' TOU' : '';
+        const exists = state.scenarios.find(s =>
+          Math.abs(s.input.systemKwp - state.input.systemKwp) < 0.1 &&
+          Math.abs(s.input.initialCost - state.input.initialCost) < 1 &&
+          s.input.tariffType === state.input.tariffType &&
+          Math.abs((s.input.selfConsumptionRate || 0) - (state.input.selfConsumptionRate || 0)) < 0.01
+        );
+        if (!exists && state.scenarios.length < 4) {
+          state.scenarios.push({
+            id: Date.now() + Math.random(),
+            name: `${state.input.systemKwp} kWp${tariffTag}`,
+            input: { ...state.input },
+            result: freshResult,
+          });
+          saveScenarios(state.scenarios);
+        }
+        state.screen = 'compare'; render(); window.scrollTo(0, 0);
+        return;
+      }
+      if (a === 'save') {
+        const defaultName = `ระบบ ${state.input.systemKwp} kWp`;
+        const name = prompt('ตั้งชื่อโปรเจกต์:', defaultName);
+        if (!name || !name.trim()) return;
+        const projects = loadProjects();
+        projects.unshift({
+          id: Date.now(), name: name.trim(),
+          createdAt: new Date().toISOString(),
+          input: { ...state.input },
+        });
+        saveProjects(projects); showToast('บันทึกโปรเจกต์แล้ว ✓');
+        return;
+      }
+      if (a === 'projects') { state.screen = 'projects'; render(); window.scrollTo(0, 0); return; }
+    });
+  });
+
+  document.querySelectorAll('[data-toggle="subsidy"]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.subsidy = !state.input.subsidy; render();
+    });
+  });
+
+  document.querySelectorAll('[data-payment]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.paymentType = el.dataset.payment; render();
+    });
+  });
+
+  document.querySelectorAll('[data-interest-type]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.interestType = el.dataset.interestType; render();
+    });
+  });
+
+  document.querySelectorAll('[data-tariff-type]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.tariffType = el.dataset.tariffType; render();
+    });
+  });
+
+  document.querySelectorAll('[data-tou-pct]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.touOnPeakPct = parseFloat(el.dataset.touPct); render();
+    });
+  });
+
+  document.querySelectorAll('[data-preset-years]').forEach(el => {
+    el.addEventListener('click', () => {
+      const years = parseInt(el.dataset.presetYears, 10);
+      state.input.loanYears = years;
+      state.input.loanMonths = years * 12;
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const field = el.dataset.field;
+    el.addEventListener('input', e => {
+      let v = parseFloat(e.target.value) || 0;
+
+      if (field === 'selfConsumptionRate') {
+        v = v / 100;
+        e.target.style.setProperty('--val', (v * 100) + '%');
+        const bn = document.getElementById('bigNum');
+        if (bn) bn.textContent = Math.round(v * 100);
+      }
+
+      if (field === 'degradationRatePct') { state.input.degradationRate = v / 100; return; }
+
+      if (field === 'dailyProductionKwh') {
+        const newDaily = Math.max(0, v);
+        state.input.yieldPerKwp = (newDaily * DAYS_PER_YEAR) / Math.max(state.input.systemKwp, 0.1);
+        updateDailyHint();
+        return;
+      }
+
+      if (field === 'systemKwp') {
+        state.input.systemKwp = v;
+        const dailyEl = document.querySelector('[data-field="dailyProductionKwh"]');
+        if (dailyEl) dailyEl.value = fmtDaily(getDailyProduction(state.input));
+        updateDailyHint();
+        return;
+      }
+
+      if (field === 'touOnPeakPctDisplay') {
+        state.input.touOnPeakPct = Math.max(0, Math.min(1, v / 100));
+        updateTariffPreview();
+        return;
+      }
+
+      if (field === 'loanYears') {
+        v = Math.max(1, Math.min(30, v));
+        state.input.loanYears = v;
+        state.input.loanMonths = Math.round(v * 12);
+        const hint = document.getElementById('loanTermHint');
+        if (hint) hint.innerHTML = `= <strong>${state.input.loanMonths} งวด</strong> (${state.input.loanMonths} เดือน)`;
+        updateLoanPreview();
+        document.querySelectorAll('[data-preset-years]').forEach(b => {
+          const y = parseFloat(b.dataset.presetYears);
+          b.classList.toggle('active', Math.abs(v - y) < 0.05);
+        });
+        return;
+      }
+
+      state.input[field] = v;
+
+      if (field === 'interestRate') updateLoanPreview();
+      if (field === 'installationWarrantyYears' || field === 'warrantyYears') updateWarrantyHints();
+      if (field === 'touOnPeak' || field === 'touOffPeak') updateTariffPreview();
+    });
+  });
+
+  document.querySelectorAll('[data-preset]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.input.selfConsumptionRate = parseFloat(el.dataset.preset); render();
+    });
+  });
+
+  document.querySelectorAll('[data-preset-kwp]').forEach(el => {
+    el.addEventListener('click', () => addPresetScenario(parseFloat(el.dataset.presetKwp)));
+  });
+
+  document.querySelectorAll('[data-delete-scenario]').forEach(el => {
+    el.addEventListener('click', () => deleteScenario(+el.dataset.deleteScenario));
+  });
+
+  document.querySelectorAll('[data-load-project]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = +el.dataset.loadProject;
+      const p = loadProjects().find(x => x.id === id);
+      if (!p) return;
+      state.input = { ...DEFAULT_INPUT, ...p.input };
+      state.input.loanYears = state.input.loanMonths / 12;
+      state.result = calculateSolar(state.input);
+      state.screen = 'results'; render(); window.scrollTo(0, 0);
+      showToast(`โหลด "${p.name}" แล้ว`);
+    });
+  });
+
+  document.querySelectorAll('[data-delete-project]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +el.dataset.deleteProject;
+      saveProjects(loadProjects().filter(p => p.id !== id));
+      render(); showToast('ลบโปรเจกต์แล้ว');
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  LIVE UPDATES
+// ═══════════════════════════════════════════════
+function updateDailyHint() {
+  const hint = document.getElementById('dailyHint');
+  if (hint) {
+    const daily = getDailyProduction(state.input);
+    const monthly = getMonthlyAvgProduction(state.input);
+    const yearly = getYearlyProduction(state.input);
+    hint.innerHTML = `<strong>ต่อเดือน (เฉลี่ย): ${fmtMonthly(monthly)} หน่วย</strong>
+      · <strong>ต่อปี: ${fmtTHB(yearly)} หน่วย</strong>`;
+  }
+  const explain = document.getElementById('dailyExplainContent');
+  if (explain) explain.innerHTML = renderDailyExplain(state.input);
+}
+
+function updateLoanPreview() {
+  const i = state.input;
+  if (i.paymentType !== 'loan') return;
+  const net = Math.max(0, i.initialCost - (i.subsidy ? i.subsidyAmount : 0));
+  const loan = calcLoan(net, i.interestRate, i.loanMonths, i.interestType);
+  const elMonthly = document.getElementById('loanMonthly');
+  const elTerm    = document.getElementById('loanTermValue');
+  const elInt     = document.getElementById('loanInterest');
+  const elTotal   = document.getElementById('loanTotalPay');
+  if (elMonthly) elMonthly.textContent = `฿${fmtNum(loan.monthly, 0)}`;
+  if (elTerm)    elTerm.textContent    = fmtLoanTerm(i.loanMonths);
+  if (elInt)     elInt.textContent     = `฿${fmtTHB(loan.totalInterest)}`;
+  if (elTotal)   elTotal.textContent   = `฿${fmtTHB(loan.totalPay)}`;
+}
+
+function updateWarrantyHints() {
+  const i = state.input;
+  const inst = i.installationWarrantyYears || 0;
+  const prod = i.warrantyYears || 0;
+  const end = Math.max(inst, prod);
+  const start = end + 1;
+  const endValue = document.getElementById('warrantyEndValue');
+  if (endValue) endValue.textContent = `${end} ปี`;
+  const hint = document.getElementById('warrantyHint');
+  if (hint) {
+    hint.innerHTML = `ใช้ปีที่มากกว่าระหว่างประกันการติดตั้ง (${inst} ปี)
+      และประกันสินค้า (${prod} ปี) = <strong>${end} ปี</strong>`;
+  }
+  const mHint = document.getElementById('maintenanceHint');
+  if (mHint) mHint.textContent = `เริ่มจ่ายตั้งแต่ปีที่ ${start}`;
+}
+
+function updateTariffPreview() {
+  const i = state.input;
+  const eff = getEffectiveTariff(i);
+  const rateEl = document.getElementById('blendedRate');
+  if (rateEl) rateEl.textContent = `฿${fmtNum(eff, 2)}/kWh`;
+  const warnEl = document.getElementById('blendedWarn');
+  if (warnEl) {
+    warnEl.innerHTML = `💡 TOU blended rate = (${i.touOnPeak} × ${Math.round(i.touOnPeakPct*100)}%)
+      + (${i.touOffPeak} × ${Math.round((1-i.touOnPeakPct)*100)}%)`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════
+state.scenarios = loadScenarios();
+applyTheme();
+render();
+</script>
+</body></html>
